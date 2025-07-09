@@ -54,9 +54,9 @@ public class MainApp {
 			outputFolder = "sim_results/ite" + iterationNumber;
 		}
 
-		//load settings from configuration file
+		//load settings from configuration file and initialize simulation settings, using graph initialization files
 		SimSettings SS = SimSettings.getInstance();
-		if(SS.initialize(configFile, edgeDevicesFile, applicationsFile) == false){
+		if(SS.initializeGraph(configFile, edgeDevicesFile, applicationsFile) == false){
 			SimLogger.printLine("cannot initialize simulation settings!");
 			System.exit(0);
 		}

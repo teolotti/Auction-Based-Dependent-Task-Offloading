@@ -216,6 +216,89 @@ public class SimSettings {
 		return result;
 	}
 
+	public boolean initializeGraph(String propertiesFile, String edgeDevicesFile, String applicationsFile){
+		boolean result = false;
+		InputStream input = null;
+		try {
+			input = new FileInputStream(propertiesFile);
+
+			// load a properties file
+			Properties prop = new Properties();
+			prop.load(input);
+
+			SIMULATION_TIME = (double)60 * Double.parseDouble(prop.getProperty("simulation_time")); //seconds
+			WARM_UP_PERIOD = (double)60 * Double.parseDouble(prop.getProperty("warm_up_period")); //seconds
+			INTERVAL_TO_GET_VM_LOAD_LOG = (double)60 * Double.parseDouble(prop.getProperty("vm_load_check_interval")); //seconds
+			INTERVAL_TO_GET_LOCATION_LOG = (double)60 * Double.parseDouble(prop.getProperty("location_check_interval")); //seconds
+			INTERVAL_TO_GET_AP_DELAY_LOG = (double)60 * Double.parseDouble(prop.getProperty("ap_delay_check_interval", "0")); //seconds
+			FILE_LOG_ENABLED = Boolean.parseBoolean(prop.getProperty("file_log_enabled"));
+			DEEP_FILE_LOG_ENABLED = Boolean.parseBoolean(prop.getProperty("deep_file_log_enabled"));
+
+			MIN_NUM_OF_MOBILE_DEVICES = Integer.parseInt(prop.getProperty("min_number_of_mobile_devices"));
+			MAX_NUM_OF_MOBILE_DEVICES = Integer.parseInt(prop.getProperty("max_number_of_mobile_devices"));
+			MOBILE_DEVICE_COUNTER_SIZE = Integer.parseInt(prop.getProperty("mobile_device_counter_size"));
+			WLAN_RANGE = Integer.parseInt(prop.getProperty("wlan_range", "0"));
+
+			WAN_PROPAGATION_DELAY = Double.parseDouble(prop.getProperty("wan_propagation_delay", "0"));
+			GSM_PROPAGATION_DELAY = Double.parseDouble(prop.getProperty("gsm_propagation_delay", "0"));
+			LAN_INTERNAL_DELAY = Double.parseDouble(prop.getProperty("lan_internal_delay", "0"));
+			BANDWITH_WLAN = 1000 * Integer.parseInt(prop.getProperty("wlan_bandwidth"));
+			BANDWITH_MAN = 1000 * Integer.parseInt(prop.getProperty("man_bandwidth", "0"));
+			BANDWITH_WAN = 1000 * Integer.parseInt(prop.getProperty("wan_bandwidth", "0"));
+			BANDWITH_GSM =  1000 * Integer.parseInt(prop.getProperty("gsm_bandwidth", "0"));
+
+			NUM_OF_HOST_ON_CLOUD_DATACENTER = Integer.parseInt(prop.getProperty("number_of_host_on_cloud_datacenter"));
+			NUM_OF_VM_ON_CLOUD_HOST = Integer.parseInt(prop.getProperty("number_of_vm_on_cloud_host"));
+			CORE_FOR_CLOUD_VM = Integer.parseInt(prop.getProperty("core_for_cloud_vm"));
+			MIPS_FOR_CLOUD_VM = Integer.parseInt(prop.getProperty("mips_for_cloud_vm"));
+			RAM_FOR_CLOUD_VM = Integer.parseInt(prop.getProperty("ram_for_cloud_vm"));
+			STORAGE_FOR_CLOUD_VM = Integer.parseInt(prop.getProperty("storage_for_cloud_vm"));
+
+			RAM_FOR_VM = Integer.parseInt(prop.getProperty("ram_for_mobile_vm"));
+			CORE_FOR_VM = Integer.parseInt(prop.getProperty("core_for_mobile_vm"));
+			MIPS_FOR_VM = Integer.parseInt(prop.getProperty("mips_for_mobile_vm"));
+			STORAGE_FOR_VM = Integer.parseInt(prop.getProperty("storage_for_mobile_vm"));
+
+			ORCHESTRATOR_POLICIES = prop.getProperty("orchestrator_policies").split(",");
+
+			SIMULATION_SCENARIOS = prop.getProperty("simulation_scenarios").split(",");
+
+			NORTHERN_BOUND = Double.parseDouble(prop.getProperty("northern_bound", "0"));
+			SOUTHERN_BOUND = Double.parseDouble(prop.getProperty("southern_bound", "0"));
+			EASTERN_BOUND = Double.parseDouble(prop.getProperty("eastern_bound", "0"));
+			WESTERN_BOUND = Double.parseDouble(prop.getProperty("western_bound", "0"));
+
+			//avg waiting time in a place (min)
+			double place1_mean_waiting_time = Double.parseDouble(prop.getProperty("attractiveness_L1_mean_waiting_time"));
+			double place2_mean_waiting_time = Double.parseDouble(prop.getProperty("attractiveness_L2_mean_waiting_time"));
+			double place3_mean_waiting_time = Double.parseDouble(prop.getProperty("attractiveness_L3_mean_waiting_time"));
+
+			//mean waiting time (minute)
+			mobilityLookUpTable = new double[]{
+					place1_mean_waiting_time, //ATTRACTIVENESS_L1
+					place2_mean_waiting_time, //ATTRACTIVENESS_L2
+					place3_mean_waiting_time  //ATTRACTIVENESS_L3
+			};
+
+
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		} finally {
+			if (input != null) {
+				try {
+					input.close();
+					result = true;
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		parseGraphApplicationsXML(applicationsFile);
+		parseEdgeDevicesXML(edgeDevicesFile);
+
+		return result;
+	}
+
 	/**
 	 * returns the parsed XML document for edge_devices.xml
 	 */
@@ -668,6 +751,10 @@ public class SimSettings {
 			System.exit(1);
 		}
 	}
+
+	private void parseGraphApplicationsXML(String filePath)
+	{}
+
 
 	private void parseEdgeDevicesXML(String filePath)
 	{
