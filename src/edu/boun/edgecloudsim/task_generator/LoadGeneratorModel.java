@@ -16,12 +16,15 @@ package edu.boun.edgecloudsim.task_generator;
 import java.util.List;
 
 import edu.boun.edgecloudsim.utils.TaskProperty;
+import edu.boun.edgecloudsim.utils.WorkflowProperty;
 
 public abstract class LoadGeneratorModel {
 	protected List<TaskProperty> taskList;
 	protected int numberOfMobileDevices;
 	protected double simulationTime;
 	protected String simScenario;
+
+	protected List<WorkflowProperty> workflowList; // This can be used if workflows are supported in the model
 	
 	public LoadGeneratorModel(int _numberOfMobileDevices, double _simulationTime, String _simScenario){
 		numberOfMobileDevices=_numberOfMobileDevices;
@@ -41,6 +44,10 @@ public abstract class LoadGeneratorModel {
 	 */
 	public List<TaskProperty> getTaskList() {
 		return taskList;
+	}
+
+	public List<WorkflowProperty> getWorkflowList() {
+		return null; // This method can be overridden if needed
 	}
 
 	/*

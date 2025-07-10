@@ -102,8 +102,8 @@ public class MainApp {
 						// Generate EdgeCloudsim Scenario Factory
 						ScenarioFactory sampleFactory = new SampleScenarioFactory(j,SS.getSimulationTime(), orchestratorPolicy, simScenario);
 
-						// Generate EdgeCloudSim Simulation Manager
-						SimManager manager = new SimManager(sampleFactory, j, simScenario, orchestratorPolicy);
+						// Generate EdgeCloudSim Simulation Manager, using our AuctionSimManager
+						SimManager manager = new AuctionSimManager(sampleFactory, j, simScenario, orchestratorPolicy);
 
 						// Start simulation
 						manager.startSimulation();

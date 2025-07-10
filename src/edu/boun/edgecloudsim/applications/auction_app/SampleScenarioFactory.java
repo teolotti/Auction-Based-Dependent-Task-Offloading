@@ -43,7 +43,7 @@ public class SampleScenarioFactory implements ScenarioFactory {
 	
 	@Override
 	public LoadGeneratorModel getLoadGeneratorModel() {
-		return new IdleActiveLoadGenerator(numOfMobileDevice, simulationTime, simScenario);
+		return new WorkflowLoadGenerator(numOfMobileDevice, simulationTime, simScenario); //our custom load generator
 	}
 
 	@Override
