@@ -182,6 +182,8 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 				SimLogger.getInstance().failedDueToBandwidth(task.getCloudletId(), CloudSim.clock(), delayType);
 			}
 		}
+		//graph tasks need logic to decide if scheduling is needed or not
+			schedule(getId(), 0.0, RUN_AUCTION);//note, we schedule on return event, we should not need a delay
 	}
 	
 	protected void processOtherEvent(SimEvent ev) {
@@ -289,7 +291,6 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 			case ENQUEUE_REQ:
 			{
 				TaskProperty task = (TaskProperty) ev.getData();
-				//get utilizations
 				ArrayList<EdgeStatus> statuses = SimManager.getInstance().getEdgeServerManager().getEdgeDevicesStatus();
 				int preference = formPreferences(statuses);
 				if(preference < 0) {
