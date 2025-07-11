@@ -34,6 +34,8 @@ import edu.boun.edgecloudsim.edge_client.CpuUtilizationModel_Custom;
 import edu.boun.edgecloudsim.edge_client.MobileDeviceManager;
 import edu.boun.edgecloudsim.edge_client.Task;
 import edu.boun.edgecloudsim.edge_server.EdgeHost;
+import edu.boun.edgecloudsim.edge_server.EdgeServerManager;
+import edu.boun.edgecloudsim.edge_server.EdgeStatus;
 import edu.boun.edgecloudsim.edge_server.EdgeVM;
 import edu.boun.edgecloudsim.network.NetworkModel;
 import edu.boun.edgecloudsim.utils.Location;
@@ -44,7 +46,14 @@ import org.cloudbus.cloudsim.UtilizationModelFull;
 import org.cloudbus.cloudsim.Vm;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.core.CloudSimTags;
+import org.cloudbus.cloudsim.core.SimEntity;
 import org.cloudbus.cloudsim.core.SimEvent;
+
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+
+import edu.boun.edgecloudsim.applications.auction_app.Request;
 
 public class SampleMobileDeviceManager extends MobileDeviceManager {
 	private static final int BASE = 100000; //start from base in order not to conflict cloudsim tag!
@@ -56,8 +65,16 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 	private static final int REQUEST_RECEIVED_BY_EDGE_DEVICE_TO_RELAY_NEIGHBOR = BASE + 5;
 	private static final int RESPONSE_RECEIVED_BY_MOBILE_DEVICE = BASE + 6;
 	private static final int RESPONSE_RECEIVED_BY_EDGE_DEVICE_TO_RELAY_MOBILE_DEVICE = BASE + 7;
-
+	
 	private static final double MM1_QUEUE_MODEL_UPDATE_INTEVAL = 5; //seconds
+	
+	private static final int ENQUEUE_REQ     = BASE+10;
+	private static final int RUN_AUCTION     = BASE+11;
+	private static final int AUCTION_RESULT  = BASE+12;
+	
+	private  Deque<Request> reqQueue = new ArrayDeque<>();
+	private  int auctionTodoCounter = 0;
+	private boolean auctionRunning = false;
 	
 	private int taskIdCounter=0;
 	
@@ -76,8 +93,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 	@Override
 	public void startEntity() {
 		super.startEntity();
-		schedule(getId(), SimSettings.CLIENT_ACTIVITY_START_TIME +
-				MM1_QUEUE_MODEL_UPDATE_INTEVAL, UPDATE_MM1_QUEUE_MODEL);
+		schedule(getId(), SimSettings.CLIENT_ACTIVITY_START_TIME + MM1_QUEUE_MODEL_UPDATE_INTEVAL, UPDATE_MM1_QUEUE_MODEL);
 	}
 	
 	/**
@@ -182,7 +198,6 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 			{
 				((SampleNetworkModel)networkModel).updateMM1QueeuModel();
 				schedule(getId(), MM1_QUEUE_MODEL_UPDATE_INTEVAL, UPDATE_MM1_QUEUE_MODEL);
-	
 				break;
 			}
 			case REQUEST_RECEIVED_BY_CLOUD:
@@ -271,14 +286,100 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 				SimLogger.getInstance().taskEnded(task.getCloudletId(), CloudSim.clock());
 				break;
 			}
+			case ENQUEUE_REQ:
+			{
+				TaskProperty task = (TaskProperty) ev.getData();
+				//get utilizations
+				ArrayList<EdgeStatus> statuses = SimManager.getInstance().getEdgeServerManager().getEdgeDevicesStatus();
+				int preference = formPreferences(statuses);
+				if(preference < 0) {
+					SimLogger.printLine("preference calculation went wrong");
+					System.exit(1);
+				}
+				long taskLength = task.getLength();
+				double bid = decideBid(taskLength);
+				Task dummyTask = createTask(task);
+				
+				double minStartTime = statuses.get(preference).getWaitingTime();
+				double maxFinishingTime = minStartTime + taskLength/statuses.get(preference).getMips();
+				double uploadCost = networkModel.getUploadDelay(task.getMobileDeviceId(), SimSettings.GENERIC_EDGE_DEVICE_ID, dummyTask);
+				double downloadCost = networkModel.getDownloadDelay(SimSettings.GENERIC_EDGE_DEVICE_ID, task.getMobileDeviceId(), dummyTask);
+				
+				double processingEstimated = estimateProcessingTime(maxFinishingTime, minStartTime, uploadCost, downloadCost);
+				
+				Request request = new Request(task.getMobileDeviceId(), bid, processingEstimated, task, preference);
+				
+				reqQueue.add(request);
+				if(!auctionRunning)
+					schedule(getId(), 0.001, RUN_AUCTION);
+				else
+					auctionTodoCounter++;
+				break;
+			}
+			case RUN_AUCTION:
+			{
+				if(reqQueue.size() <= 0)
+					break;
+				auctionRunning = true;
+				int winnerMobileId = ((SampleEdgeOrchestrator)SimManager.getInstance().getEdgeOrchestrator()).auction(reqQueue);
+				Request winner = null;
+				for(Request request : reqQueue) {
+					if(winnerMobileId == request.getId())
+						winner = request;
+						reqQueue.remove(request);
+				}
+				if(winner != null)
+					schedule(getId(), 0.001, AUCTION_RESULT, winner); // note:these and the next conditional schedules must be the same (auction thinking time)
+				else
+					SimLogger.printLine("Winner not found");
+				break;
+			}
+			case AUCTION_RESULT:
+			{
+				if(auctionTodoCounter > 0) {
+					auctionTodoCounter--;
+					schedule(getId(), 0.0, RUN_AUCTION);
+				}
+				auctionRunning = false;
+				Request winner = (Request) ev.getData();
+				TaskProperty task = winner.getTask();
+				submitTask(task, winner.getPreference());
+				break;
+			}
 			default:
 				SimLogger.printLine(getName() + ".processOtherEvent(): " + "Error - event unknown by this DatacenterBroker. Terminating simulation...");
 				System.exit(0);
 				break;
 		}
 	}
+	
+	public double estimateProcessingTime(double maxFinishingTime, double minStartTime, double uploadCost, double downloadCost) {
+		return maxFinishingTime - minStartTime + uploadCost + downloadCost;
+	}
+	
+	public int formPreferences(ArrayList<EdgeStatus> statuses) {//choose most mips for available percentage
+		int preference = -1;
+		double max = -0.1;
+		for(int i = 0; i < statuses.size(); i++) {
+			if (statuses.get(i).getUtilization() * statuses.get(i).getMips() > max) { //calculate most MIPS slice available
+				max = statuses.get(i).getUtilization() * statuses.get(i).getMips();
+				preference = i;
+			}
+		}
+		return preference;
+	}
+	
+	public double decideBid(long taskLength) { //maybe needs fine-tuning in the edge cost, and generalization
+		double bid = (0.08 * taskLength)/5000;
+		return bid;
+	}
+	
+	@Override
+	public void setupMobileDeviceArrival(TaskProperty edgeTask) {//subscribes to the net, delay value is to be reasoned upon
+		schedule(getId(), 0.001, ENQUEUE_REQ, edgeTask);
+	}
 
-	public void submitTask(TaskProperty edgeTask) {
+	public void submitTask(TaskProperty edgeTask, int preference) {
 		int vmType=0;
 		int nextEvent=0;
 		int nextDeviceForNetworkModel;
@@ -304,7 +405,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 				(int)task.getCloudletFileSize(),
 				(int)task.getCloudletOutputSize());
 
-		int nextHopId = SimManager.getInstance().getEdgeOrchestrator().getDeviceToOffload(task);
+		int nextHopId = preference;
 		
 		if(nextHopId == SimSettings.CLOUD_DATACENTER_ID){
 			delay = networkModel.getUploadDelay(task.getMobileDeviceId(), SimSettings.CLOUD_DATACENTER_ID, task);

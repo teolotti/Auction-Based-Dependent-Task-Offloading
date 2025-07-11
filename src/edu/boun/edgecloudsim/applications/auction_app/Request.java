@@ -47,5 +47,13 @@ public class Request {
 
 	public void setTask(TaskProperty task) {
 		this.task = task;
+	}
+
+	public int getPreference() {
+		return preference;
+	}
+
+	public void setPreference(int preference) {
+		this.preference = preference;
 	}	
 }

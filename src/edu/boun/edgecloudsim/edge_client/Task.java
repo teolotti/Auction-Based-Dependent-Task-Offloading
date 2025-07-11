@@ -25,6 +25,7 @@ public class Task extends Cloudlet {
 	private int hostIndex;
 	private int vmIndex;
 	private int datacenterId;
+	private boolean last = false; //keeps track of the end of an application's DAG
 
 	public Task(int _mobileDeviceId, int cloudletId, long cloudletLength, int pesNumber,
 			long cloudletFileSize, long cloudletOutputSize,
@@ -86,5 +87,13 @@ public class Task extends Cloudlet {
 	
 	public double getCreationTime() {
 		return creationTime;
+	}
+	
+	public boolean isLast() {
+		return last;
+	}
+	
+	public void setLast(boolean last) {
+		this.last = last;
 	}
 }

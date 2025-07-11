@@ -22,7 +22,7 @@ import edu.boun.edgecloudsim.edge_server.EdgeServerManager;
 import edu.boun.edgecloudsim.mobility.MobilityModel;
 import edu.boun.edgecloudsim.mobility.NomadicMobility;
 import edu.boun.edgecloudsim.network.NetworkModel;
-import edu.boun.edgecloudsim.task_generator.IdleActiveLoadGenerator;
+import edu.boun.edgecloudsim.task_generator.OneTimeLoadGenerator;
 import edu.boun.edgecloudsim.task_generator.LoadGeneratorModel;
 
 public class SampleScenarioFactory implements ScenarioFactory {
@@ -43,7 +43,7 @@ public class SampleScenarioFactory implements ScenarioFactory {
 	
 	@Override
 	public LoadGeneratorModel getLoadGeneratorModel() {
-		return new IdleActiveLoadGenerator(numOfMobileDevice, simulationTime, simScenario);
+		return new OneTimeLoadGenerator(numOfMobileDevice, simulationTime, simScenario);
 	}
 
 	@Override
@@ -63,7 +63,7 @@ public class SampleScenarioFactory implements ScenarioFactory {
 
 	@Override
 	public EdgeServerManager getEdgeServerManager() {
-		return new DefaultEdgeServerManager();
+		return new StatEdgeServerManager();
 	}
 	
 	@Override
