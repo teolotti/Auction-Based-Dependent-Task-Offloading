@@ -12,6 +12,7 @@ import edu.boun.edgecloudsim.mobility.MobilityModel;
 import edu.boun.edgecloudsim.network.NetworkModel;
 import edu.boun.edgecloudsim.task_generator.LoadGeneratorModel;
 import edu.boun.edgecloudsim.utils.SimLogger;
+import edu.boun.edgecloudsim.utils.WorkflowProperty;
 import org.cloudbus.cloudsim.Host;
 import org.cloudbus.cloudsim.core.SimEvent;
 
@@ -81,7 +82,13 @@ public class AuctionSimManager extends SimManager {
     public void processEvent(SimEvent ev) {
         if (ev.getTag() == CREATE_WORKFLOW){
             synchronized (this) {
-
+                try {
+                    WorkflowProperty workflow = (WorkflowProperty) ev.getData();
+                    mobileDeviceManager.processWorkflow(workflow);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.exit(1);
+                }
             }
         }
         else {

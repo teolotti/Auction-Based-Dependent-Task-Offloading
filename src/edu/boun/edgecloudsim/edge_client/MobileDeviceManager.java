@@ -1,5 +1,6 @@
 package edu.boun.edgecloudsim.edge_client;
 
+import edu.boun.edgecloudsim.utils.WorkflowProperty;
 import org.cloudbus.cloudsim.DatacenterBroker;
 import org.cloudbus.cloudsim.UtilizationModel;
 
@@ -22,4 +23,13 @@ public abstract class MobileDeviceManager  extends DatacenterBroker {
 	public abstract UtilizationModel getCpuUtilizationModel();
 	
 	public abstract void submitTask(TaskProperty edgeTask);
+
+	//====================================
+	// Additional methods for Auction App
+	//====================================
+
+	public void processWorkflow(WorkflowProperty workflowProperty) {
+		// Default implementation does nothing
+		// This can be overridden in subclasses if needed
+	}
 }

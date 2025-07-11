@@ -46,9 +46,6 @@ public abstract class LoadGeneratorModel {
 		return taskList;
 	}
 
-	public List<WorkflowProperty> getWorkflowList() {
-		return null; // This method can be overridden if needed
-	}
 
 	/*
 	 * fill task list according to related task generation model
@@ -59,4 +56,13 @@ public abstract class LoadGeneratorModel {
 	 * returns the task type (index) that the mobile device uses
 	 */
 	public abstract int getTaskTypeOfDevice(int deviceId);
+
+	//=============================================================
+	// Additional Methods for Auction App, Workflow processing, etc.
+	//=============================================================
+
+	public List<WorkflowProperty> getWorkflowList() {
+		return null; // This method can be overridden if needed
+	}
 }
+

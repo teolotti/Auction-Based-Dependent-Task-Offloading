@@ -115,49 +115,6 @@ public class SimSettings {
 	// [12] delay sensitivity [0-1]
 	private double[][] taskLookUpTable = null;
 
-
-	//task workflows are stored using this two following classes
-	private static class Workflow {
-		public String name;
-		public TaskNode[] tasks;
-		public int[][] dependencies; // adjacency matrix for task dependencies
-		public double[] properties; // properties of the workflow, e.g., usage percentage, prob. cloud selection, poisson mean, etc.
-
-		public Workflow(String name, int numTasks) {
-			this.name = name;
-			this.tasks = new TaskNode[numTasks];
-			this.dependencies = new int[numTasks][numTasks];
-		}
-
-		public void addTask(TaskNode task, int index) {
-			tasks[index] = task;
-		}
-
-		public void addDependency(int fromTaskIdx, int toTaskIdx) {
-			dependencies[toTaskIdx][fromTaskIdx] = 1;
-		}
-
-		public int getNumByTaskNameandCount(String taskName, int count) {
-			for (int i = 0; i < tasks.length; i++) {
-				if (tasks[i].name.equals(taskName) && tasks[i].index == count) {
-					return i;
-				}
-			}
-			return -1; // not found
-		}
-	}
-
-	private static class TaskNode {
-		public String name;
-		public double[] properties;
-		int index;
-
-		public TaskNode(String name, int numProperties) {
-			this.name = name;
-			this.properties = new double[numProperties];
-		}
-	}
-
 	private String[] taskNames = null;
 
 	private SimSettings() {
@@ -795,106 +752,6 @@ public class SimSettings {
 		}
 	}
 
-	private void parseGraphApplicationsXML(String filePath)
-	{
-		Document doc = null;
-		try {
-			File devicesFile = new File(filePath);
-			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-			doc = dBuilder.parse(devicesFile);
-			doc.getDocumentElement().normalize();
-
-			String workflowAttributes[] = {
-					"usage_percentage", //usage percentage [0-100]
-					"prob_cloud_selection", //prob. of selecting cloud [0-100]
-					"poisson_interarrival", //poisson mean (sec)
-					"delay_sensitivity", //delay sensitivity [0-1]
-					"vm_utilization_on_edge", //vm utilization on edge vm [0-100]
-					"vm_utilization_on_cloud", //vm utilization on cloud vm [0-100]
-					"vm_utilization_on_mobile", //vm utilization on mobile vm [0-100]
-			};
-
-			String taskAttributes[] = {
-					"name", //name of the task
-					"count", //number of tasks
-					"active_period", //active period (sec)
-					"idle_period", //idle period (sec)
-					"data_upload", //avg data upload (KB)
-					"data_download", //avg data download (KB)
-					"task_length", //avg task length (MI)
-					"required_core", //required # of core
-			};
-
-
-
-			NodeList appList = doc.getElementsByTagName("application");
-			Workflow [] workflows = new Workflow[appList.getLength()];
-
-			for (int i = 0; i < appList.getLength(); i++) {
-				Node appNode = appList.item(i);
-
-				Element appElement = (Element) appNode;
-				isAttributePresent(appElement, "name");
-				workflows[i] = new Workflow(appElement.getAttribute("name"), Integer.parseInt(appElement.getAttribute("num_task")));
-
-
-				for(int m=0; m<workflowAttributes.length; m++){
-					isElementPresent(appElement, workflowAttributes[m]);
-					workflows[i].properties[m] = Double.parseDouble(appElement.
-							getElementsByTagName(workflowAttributes[m]).item(0).getTextContent());
-				}
-
-				NodeList taskList = appElement.getElementsByTagName("task_type");
-				for (int j = 0; j < taskList.getLength(); j++) {
-					Node taskNode = taskList.item(j);
-					Element taskElement = (Element) taskNode;
-					isAttributePresent(taskElement, "name");
-
-					isAttributePresent(taskElement, "count");
-					int count = Integer.parseInt(taskElement.getAttribute("count"));
-
-					TaskNode task = new TaskNode(taskElement.getAttribute("name"), taskAttributes.length);
-					for(int k=0; k<taskAttributes.length; k++){
-						isElementPresent(taskElement, taskAttributes[k]);
-						task.properties[k] = Double.parseDouble(taskElement.
-								getElementsByTagName(taskAttributes[k]).item(0).getTextContent());
-					}
-
-					for (int k = 0; k < count; k++) {
-						workflows[i].addTask(task, j * count + k);
-					}
-				}
-
-				isElementPresent(appElement, "task_dependencies");
-				NodeList taskDependencies = appElement.getElementsByTagName("task_dependencies").item(0).getChildNodes();
-				for (int j = 0; j < taskDependencies.getLength(); j++) {
-					Node dependencyNode = taskDependencies.item(j);
-					if (dependencyNode.getNodeType() == Node.ELEMENT_NODE) {
-						Element dependencyElement = (Element) dependencyNode;
-						String fromTaskName = dependencyElement.getAttribute("from");
-						String toTaskName = dependencyElement.getAttribute("to");
-
-						int fromTaskCount = Integer.parseInt(dependencyElement.getAttribute("n1"));
-						int toTaskCount = Integer.parseInt(dependencyElement.getAttribute("n2"));
-
-						int fromTaskIdx = workflows[i].getNumByTaskNameandCount(fromTaskName, fromTaskCount);
-						int toTaskIdx = workflows[i].getNumByTaskNameandCount(toTaskName, toTaskCount);
-
-						if (fromTaskIdx >= 0 && toTaskIdx >= 0) {
-							workflows[i].addDependency(fromTaskIdx, toTaskIdx);
-						} else {
-							SimLogger.printLine("Error: Task dependency references non-existing tasks in workflow " + workflows[i].name);
-						}
-					}
-				}
-			}
-		} catch (Exception e) {
-			SimLogger.printLine("Edge Devices XML cannot be parsed! Terminating simulation...");
-			e.printStackTrace();
-			System.exit(1);
-		}
-	}
 
 
 	private void parseEdgeDevicesXML(String filePath)
@@ -963,4 +820,207 @@ public class SimSettings {
 			System.exit(1);
 		}
 	}
+
+	//===========================================================
+	// Additional methods and attributes for auction applications, graph parsing
+	//===========================================================
+
+
+	//task workflows are stored using this two following classes
+	public static class Workflow {
+		private String name;
+		private TaskNode[] tasks;
+		private int[][] dependencies; // adjacency matrix for task dependencies
+
+		// properties of the workflow
+		// [0] usage percentage (%)
+		// [1] prob. of selecting cloud (%)
+		// [2] poisson mean (sec)
+		// [3] delay sensitivity [0-1]
+		// [4] vm utilization on edge (%)
+		// [5] vm utilization on cloud (%)
+		// [6] vm utilization on mobile (%)
+		private double[] properties; // properties of the workflow, e.g., usage percentage, prob. cloud selection, poisson mean, etc.
+
+		public Workflow(String name, int numTasks) {
+			this.name = name;
+			this.tasks = new TaskNode[numTasks];
+			this.dependencies = new int[numTasks][numTasks];
+		}
+
+		public void addTask(TaskNode task, int index) {
+			tasks[index] = task;
+
+		}
+
+		public void addDependency(int fromTaskIdx, int toTaskIdx) {
+			dependencies[toTaskIdx][fromTaskIdx] = 1;
+		}
+
+		public double[] getWorkflowProperties() {
+			return properties;
+		}
+
+		public int getNumByTaskNameandCount(String taskName, int count) {
+			for (int i = 0; i < tasks.length; i++) {
+				if (tasks[i].name.equals(taskName) && tasks[i].index == count) {
+					return i;
+				}
+			}
+			return -1; // not found
+		}
+		public String getName() {
+			return name;
+		}
+		public TaskNode[] getTasks() {
+			return tasks;
+		}
+		public int[][] getDependencies() {
+			return dependencies;
+		}
+	}
+
+	public static class TaskNode {
+		private String name;
+		// properties of the task
+		//[0] active period (sec)
+		//[1] idle period (sec)
+		//[2] avg data upload (KB)
+		//[3] avg data download (KB)
+		//[4] avg task length (MI)
+		//[5] required # of cores
+		private double[] properties;
+		private int index;
+
+		public TaskNode(String name, int numProperties) {
+			this.name = name;
+			this.properties = new double[numProperties];
+		}
+
+		public double[] getTaskNodeProperties() {
+			return properties;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public int getIndex() {
+			return index;
+		}
+
+		public void setIndex(int index) {
+			this.index = index;
+		}
+	}
+
+	private Workflow[] workflows = null; // array of workflows
+
+	private void parseGraphApplicationsXML(String filePath)
+	{
+		Document doc = null;
+		try {
+			File devicesFile = new File(filePath);
+			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+			doc = dBuilder.parse(devicesFile);
+			doc.getDocumentElement().normalize();
+
+			String workflowAttributes[] = {
+					"usage_percentage", //usage percentage [0-100]
+					"prob_cloud_selection", //prob. of selecting cloud [0-100]
+					"poisson_interarrival", //poisson mean (sec)
+					"delay_sensitivity", //delay sensitivity [0-1]
+					"vm_utilization_on_edge", //vm utilization on edge vm [0-100]
+					"vm_utilization_on_cloud", //vm utilization on cloud vm [0-100]
+					"vm_utilization_on_mobile", //vm utilization on mobile vm [0-100]
+			};
+
+			String taskAttributes[] = {
+					"active_period", //active period (sec)
+					"idle_period", //idle period (sec)
+					"data_upload", //avg data upload (KB)
+					"data_download", //avg data download (KB)
+					"task_length", //avg task length (MI)
+					"required_core", //required # of core
+			};
+
+
+
+			NodeList appList = doc.getElementsByTagName("application");
+			workflows = new Workflow[appList.getLength()];
+
+			for (int i = 0; i < appList.getLength(); i++) {
+				Node appNode = appList.item(i);
+
+				Element appElement = (Element) appNode;
+				isAttributePresent(appElement, "name");
+				workflows[i] = new Workflow(appElement.getAttribute("name"), Integer.parseInt(appElement.getAttribute("num_task")));
+
+
+				for(int m=0; m<workflowAttributes.length; m++){
+					isElementPresent(appElement, workflowAttributes[m]);
+					workflows[i].properties[m] = Double.parseDouble(appElement.
+							getElementsByTagName(workflowAttributes[m]).item(0).getTextContent());
+				}
+
+				NodeList taskList = appElement.getElementsByTagName("task_type");
+				for (int j = 0; j < taskList.getLength(); j++) {
+					Node taskNode = taskList.item(j);
+					Element taskElement = (Element) taskNode;
+					isAttributePresent(taskElement, "name");
+
+					isAttributePresent(taskElement, "count");
+					int count = Integer.parseInt(taskElement.getAttribute("count"));
+
+					TaskNode task = new TaskNode(taskElement.getAttribute("name"), taskAttributes.length);
+					for(int k=0; k<taskAttributes.length; k++){
+						isElementPresent(taskElement, taskAttributes[k]);
+						task.properties[k] = Double.parseDouble(taskElement.
+								getElementsByTagName(taskAttributes[k]).item(0).getTextContent());
+					}
+
+					for (int k = 0; k < count; k++) {
+						task.setIndex(j * count + k);
+						workflows[i].addTask(task, j * count + k);
+					}
+				}
+
+				isElementPresent(appElement, "task_dependencies");
+				NodeList taskDependencies = appElement.getElementsByTagName("task_dependencies").item(0).getChildNodes();
+				for (int j = 0; j < taskDependencies.getLength(); j++) {
+					Node dependencyNode = taskDependencies.item(j);
+					if (dependencyNode.getNodeType() == Node.ELEMENT_NODE) {
+						Element dependencyElement = (Element) dependencyNode;
+						String fromTaskName = dependencyElement.getAttribute("from");
+						String toTaskName = dependencyElement.getAttribute("to");
+
+						int fromTaskCount = Integer.parseInt(dependencyElement.getAttribute("n1"));
+						int toTaskCount = Integer.parseInt(dependencyElement.getAttribute("n2"));
+
+						int fromTaskIdx = workflows[i].getNumByTaskNameandCount(fromTaskName, fromTaskCount);
+						int toTaskIdx = workflows[i].getNumByTaskNameandCount(toTaskName, toTaskCount);
+
+						if (fromTaskIdx >= 0 && toTaskIdx >= 0) {
+							workflows[i].addDependency(fromTaskIdx, toTaskIdx);
+						} else {
+							SimLogger.printLine("Error: Task dependency references non-existing tasks in workflow " + workflows[i].name);
+						}
+					}
+				}
+			}
+		} catch (Exception e) {
+			SimLogger.printLine("Edge Devices XML cannot be parsed! Terminating simulation...");
+			e.printStackTrace();
+			System.exit(1);
+		}
+	}
+
+	public Workflow[] getWorkflows() {
+		// This method should return the workflows parsed from the XML
+		// The implementation is not provided in the original code, so it is assumed to be similar to the parseApplicationsXML method
+		return workflows;
+	}
 }
+
+

@@ -39,6 +39,7 @@ import edu.boun.edgecloudsim.network.NetworkModel;
 import edu.boun.edgecloudsim.utils.Location;
 import edu.boun.edgecloudsim.utils.SimLogger;
 import edu.boun.edgecloudsim.utils.TaskProperty;
+import edu.boun.edgecloudsim.utils.WorkflowProperty;
 import org.cloudbus.cloudsim.UtilizationModel;
 import org.cloudbus.cloudsim.UtilizationModelFull;
 import org.cloudbus.cloudsim.Vm;
@@ -395,5 +396,15 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		}
 		
 		return task;
+	}
+
+	//=============================================
+	//Additional methods for auction application
+	//=============================================
+
+
+	@Override
+	public void processWorkflow(WorkflowProperty workflowProperty) {
+		System.out.println("Processing Workflow");
 	}
 }
