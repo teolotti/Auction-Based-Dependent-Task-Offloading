@@ -414,13 +414,11 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		computePCPs(workflowProperty);
 		// Next step is to create personal mapping for each task in the workflow
 		PersonalPCP(workflowProperty);
-
 	}
 
 	private void computePCPs(WorkflowProperty workflowProperty) {
 		// This method should compute the PCPs (Partial Critical Paths) for the workflow
 		// based on the tasks and their dependencies.
-		// The implementation details would depend on the specific requirements of the auction application.
 		List<PCP> pcpList = new ArrayList<PCP>();
 		System.out.println("Compute PCPs");
 		workflowProperty.addPCP(pcpList);
@@ -429,7 +427,6 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 	private void PersonalPCP(WorkflowProperty workflowProperty) {
 		// This method should create personal mappings for each task in the workflow
 		// based on the PCPs computed earlier.
-		// The implementation details would depend on the specific requirements of the auction application.
 		System.out.println("Creating Personal Mapping for Workflow");
 	}
 }
