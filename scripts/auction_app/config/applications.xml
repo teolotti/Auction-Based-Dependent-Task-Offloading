@@ -8,6 +8,7 @@
 		<vm_utilization_on_edge>10</vm_utilization_on_edge>
 		<vm_utilization_on_cloud>1</vm_utilization_on_cloud>
 		<vm_utilization_on_mobile>0</vm_utilization_on_mobile>
+		<deadline_factor>6</deadline_factor>
 		<task_types>
 			<task_type name="mProjectPP" count="4">
 				<active_period>30</active_period>

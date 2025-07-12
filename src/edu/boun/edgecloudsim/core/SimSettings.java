@@ -840,6 +840,7 @@ public class SimSettings {
 		// [4] vm utilization on edge (%)
 		// [5] vm utilization on cloud (%)
 		// [6] vm utilization on mobile (%)
+		// [7] deadline factor
 		private double[] properties; // properties of the workflow, e.g., usage percentage, prob. cloud selection, poisson mean, etc.
 
 		public Workflow(String name, int numTasks) {
@@ -934,6 +935,7 @@ public class SimSettings {
 					"vm_utilization_on_edge", //vm utilization on edge vm [0-100]
 					"vm_utilization_on_cloud", //vm utilization on cloud vm [0-100]
 					"vm_utilization_on_mobile", //vm utilization on mobile vm [0-100]
+					"deadline_factor" //deadline factor
 			};
 
 			String taskAttributes[] = {
