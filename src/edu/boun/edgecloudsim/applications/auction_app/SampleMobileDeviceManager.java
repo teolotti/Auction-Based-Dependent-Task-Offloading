@@ -183,7 +183,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 			}
 		}
 		//graph tasks need logic to decide if scheduling is needed or not
-			schedule(getId(), 0.0, RUN_AUCTION);//note, we schedule on return event, we should not need a delay
+		schedule(getId(), 0.0, RUN_AUCTION);//note, we schedule on return event, we should not need a delay to model edge instant auction trigger
 	}
 	
 	protected void processOtherEvent(SimEvent ev) {
@@ -322,13 +322,14 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 				if(reqQueue.size() <= 0)
 					break;
 				auctionRunning = true;
-				int winnerMobileId = ((SampleEdgeOrchestrator)SimManager.getInstance().getEdgeOrchestrator()).auction(reqQueue);
+				AuctionResult winnerData = ((SampleEdgeOrchestrator)SimManager.getInstance().getEdgeOrchestrator()).auction(reqQueue);
 				Request winner = null;
 				for(Request request : reqQueue) {
-					if(winnerMobileId == request.getId())
+					if(winnerData.getWinnerId() == request.getId())
 						winner = request;
 						reqQueue.remove(request);
 				}
+				//Payment needs to be saved (data file with all the stats seems best solution here)
 				if(winner != null)
 					schedule(getId(), 0.001, AUCTION_RESULT, winner); // note:these and the next conditional schedules must be the same (auction thinking time)
 				else

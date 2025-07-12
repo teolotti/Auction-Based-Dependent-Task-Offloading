@@ -114,19 +114,20 @@ public class SampleEdgeOrchestrator extends EdgeOrchestrator {
 		return selectedVM;
 	}
 	
-	public int auction(Deque<Request> requests) {
-		//System.out.println("Auction at time " + CloudSim.clock() + " with: ");
-		//for (Request request : requests) {
-		//	System.out.println("Id " + request.getId() + ", " + "Preference " + request.getPreference() + ", " + "Bid " + request.getBid() + ", " + "Estimated Processing " + request.getProcessingEstimated());
-		//}
+	public AuctionResult auction(Deque<Request> requests) {
+		
 		Request[] a = requests.toArray(new Request[0]);
 		Arrays.sort(a, (r1, r2) -> 
 	    Double.compare(
 	        r2.getBid() / r2.getProcessingEstimated(),
 	        r1.getBid() / r1.getProcessingEstimated()));
 		int winnerId = a[0].getId();
+		double payment = a[0].getBid();
+		if(requests.size() > 1) {
+			payment = (a[1].getBid()/a[1].getProcessingEstimated()) * a[0].getProcessingEstimated();
+		}
 		
-		return winnerId;
+		return new AuctionResult(winnerId, payment);
 	}
 
 	@Override
