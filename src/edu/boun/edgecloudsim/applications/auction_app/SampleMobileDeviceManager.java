@@ -32,6 +32,7 @@ import edu.boun.edgecloudsim.core.SimSettings;
 import edu.boun.edgecloudsim.core.SimSettings.NETWORK_DELAY_TYPES;
 import edu.boun.edgecloudsim.edge_client.CpuUtilizationModel_Custom;
 import edu.boun.edgecloudsim.edge_client.MobileDeviceManager;
+import edu.boun.edgecloudsim.edge_client.PCP;
 import edu.boun.edgecloudsim.edge_client.Task;
 import edu.boun.edgecloudsim.edge_server.EdgeHost;
 import edu.boun.edgecloudsim.edge_server.EdgeVM;
@@ -46,6 +47,9 @@ import org.cloudbus.cloudsim.Vm;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.core.CloudSimTags;
 import org.cloudbus.cloudsim.core.SimEvent;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class SampleMobileDeviceManager extends MobileDeviceManager {
 	private static final int BASE = 100000; //start from base in order not to conflict cloudsim tag!
@@ -406,5 +410,26 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 	@Override
 	public void processWorkflow(WorkflowProperty workflowProperty) {
 		System.out.println("Processing Workflow");
+		// Compute the PCPs (Partial Critical Paths) for the workflow
+		computePCPs(workflowProperty);
+		// Next step is to create personal mapping for each task in the workflow
+		PersonalPCP(workflowProperty);
+
+	}
+
+	private void computePCPs(WorkflowProperty workflowProperty) {
+		// This method should compute the PCPs (Partial Critical Paths) for the workflow
+		// based on the tasks and their dependencies.
+		// The implementation details would depend on the specific requirements of the auction application.
+		List<PCP> pcpList = new ArrayList<PCP>();
+		System.out.println("Compute PCPs");
+		workflowProperty.addPCP(pcpList);
+	}
+
+	private void PersonalPCP(WorkflowProperty workflowProperty) {
+		// This method should create personal mappings for each task in the workflow
+		// based on the PCPs computed earlier.
+		// The implementation details would depend on the specific requirements of the auction application.
+		System.out.println("Creating Personal Mapping for Workflow");
 	}
 }
