@@ -45,6 +45,7 @@ import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.core.CloudSimTags;
 import org.cloudbus.cloudsim.core.SimEvent;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -432,7 +433,6 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		// This method should compute the PCPs (Partial Critical Paths) for the workflow
 		// based on the tasks and their dependencies.
 		SearchPCP(0, extendedMatrix, taskPCPutils, workflowProperty);
-
 	}
 
 	private void PersonalPCP(WorkflowProperty workflowProperty) {
@@ -485,8 +485,10 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 
 	public double computePriority(TaskPCPutils[] taskPCPutils, int[][] dependencyMatrix, int taskIndex, TaskProperty taskProperty) {
 		// Need a way to get average trasmission rate between edge devices(B) and average processing rate of edge devices(ρ)
-		double averageTransmissionRate = 1.0; // Placeholder for average transmission rate
-		double averageProcessingRate = 1.0; // Placeholder for average processing rate
+		int numOfEdgeHosts = SimSettings.getInstance().getNumOfEdgeHosts();
+		int averageTransmissionRate = ((SimSettings.getInstance().getManBandwidth() * binomialCoefficient(numOfEdgeHosts, 2).intValue()) +
+				SimSettings.getInstance().getWlanBandwidth()) / (numOfEdgeHosts + 1);
+		double averageProcessingRate = SimSettings.getInstance().getMipsForCloudVM();
 		double priority = 0.0;
 		if (taskIndex == dependencyMatrix.length - 1) {
 			// If it's the last task, return a high priority
@@ -521,14 +523,34 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 
 		//find successors of the current task that are not marked but all its predecessors are marked
 
-		ArrayList<Integer> candidateSuccessors = getSuccessors(dependencyMatrix, taskIndex);
+		int selectedSuccessor = selectCandidateSuccessor(dependencyMatrix, taskPCPutils, taskIndex);
+		int PCPIndex = -1;
+		while (selectedSuccessor != -1) {
+			PCPIndex++;
+			PCP pcp = new PCP();
+			while (selectedSuccessor != -1) {
+				pcp.addTask(selectedSuccessor-1); // Adjust for dummy tasks
+				taskPCPutils[selectedSuccessor].setMarked(true);
+				selectedSuccessor = selectCandidateSuccessor(dependencyMatrix, taskPCPutils, selectedSuccessor);
+			}
+			// Add the found PCP to the workflow property
+			workflowProperty.addPCP(pcp);
+			for (int i = 0; i < pcp.getTaskIndexes().size(); i++) {
+				SearchPCP(pcp.getTaskIndexes().get(i), dependencyMatrix, taskPCPutils, workflowProperty);
+			}
+			selectedSuccessor = selectCandidateSuccessor(dependencyMatrix, taskPCPutils, taskIndex);
+		}
+	}
+
+	public int selectCandidateSuccessor(int[][] dependencies, TaskPCPutils[] taskPCPutils, int taskIndex) {
+		ArrayList<Integer> candidateSuccessors = getSuccessors(dependencies, taskIndex);
 
 		boolean candidate = false;
 		for (int successor : candidateSuccessors) {
 			if (!taskPCPutils[successor].isMarked()) {
 				candidate = true;
-				for (int i = 0; i < dependencyMatrix.length; i++) {
-					if (dependencyMatrix[i][successor] > 0 && !taskPCPutils[i].isMarked()) {
+				for (int i = 0; i < dependencies.length; i++) {
+					if (dependencies[i][successor] > 0 && !taskPCPutils[i].isMarked()) {
 						candidate = false;
 						break;
 					}
@@ -538,6 +560,38 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 				candidateSuccessors.remove(Integer.valueOf(successor));
 			}
 		}
-
+		//seleziona come candidato il successore con priorità più alta
+		int selectedSuccessor = -1;
+		if (!candidateSuccessors.isEmpty()) {
+			for (int successor : candidateSuccessors) {
+				if (selectedSuccessor == -1 || taskPCPutils[successor].getPriority() > taskPCPutils[selectedSuccessor].getPriority()) {
+					selectedSuccessor = successor;
+				}
+			}
+		}
+		return selectedSuccessor;
 	}
+
+	public static BigInteger binomialCoefficient(int n, int k) {
+		if (k < 0 || k > n) {
+			return BigInteger.ZERO;
+		}
+		if (k == 0 || k == n) {
+			return BigInteger.ONE;
+		}
+		if (k > n / 2) {
+			k = n - k; // Utilizza la simmetria del coefficiente binomiale
+		}
+		return factorial(n).divide(factorial(k).multiply(factorial(n - k)));
+	}
+
+	public static BigInteger factorial(int n) {
+		BigInteger fact = BigInteger.ONE;
+		for (int i = 2; i <= n; i++) {
+			fact = fact.multiply(BigInteger.valueOf(i));
+		}
+		return fact;
+	}
+
+
 }

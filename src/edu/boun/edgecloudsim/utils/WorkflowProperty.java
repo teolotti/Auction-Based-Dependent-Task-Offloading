@@ -40,8 +40,11 @@ public class WorkflowProperty {
         this.taskList = taskList;
     }
 
-    public void addPCP(ArrayList<PCP> pcpList) {
-        this.pcpList = pcpList;
+    public void addPCP(PCP pcp) {
+        if (this.pcpList == null) {
+            this.pcpList = new ArrayList<>();
+        }
+        this.pcpList.add(pcp);
     }
 
     public ArrayList<PCP> getPcpList() {

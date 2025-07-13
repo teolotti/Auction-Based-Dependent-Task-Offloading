@@ -81,7 +81,7 @@ public class WorkflowLoadGenerator extends LoadGeneratorModel {
                     continue;
                 }
 
-                List<TaskProperty> taskList = new ArrayList<>();
+                ArrayList<TaskProperty> taskList = new ArrayList<>();
                 for (int k = 0; k < SimSettings.getInstance().getWorkflows()[randomWorkflowType].getTasks().length; k++) {
                     // Create tasks for the workflow
                     TaskProperty taskProperty = new TaskProperty(
