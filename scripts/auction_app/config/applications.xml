@@ -9,75 +9,58 @@
 		<vm_utilization_on_cloud>1</vm_utilization_on_cloud>
 		<vm_utilization_on_mobile>0</vm_utilization_on_mobile>
 		<deadline_factor>6</deadline_factor>
+		<active_period>30</active_period>
+		<idle_period>60</idle_period>
 		<task_types>
 			<task_type name="mProjectPP" count="4">
-				<active_period>30</active_period>
-				<idle_period>60</idle_period>
 				<data_upload>1000</data_upload>
 				<data_download>5000</data_download>
 				<task_length>30000</task_length>
 				<required_core>1</required_core>
-
 			</task_type>
 			<task_type name="mDiffFit" count="6">
-				<active_period>30</active_period>
-				<idle_period>60</idle_period>
 				<data_upload>1000</data_upload>
 				<data_download>5000</data_download>
 				<task_length>30000</task_length>
 				<required_core>1</required_core>
 			</task_type>
 			<task_type name="mConcatFit" count="1">
-				<active_period>30</active_period>
-				<idle_period>60</idle_period>
 				<data_upload>1000</data_upload>
 				<data_download>5000</data_download>
 				<task_length>30000</task_length>
 				<required_core>1</required_core>
 			</task_type>
 			<task_type name="mBgModel" count="1">
-				<active_period>30</active_period>
-				<idle_period>60</idle_period>
 				<data_upload>1000</data_upload>
 				<data_download>5000</data_download>
 				<task_length>30000</task_length>
 				<required_core>1</required_core>
 			</task_type>
 			<task_type name="mBackground" count="4">
-				<active_period>30</active_period>
-				<idle_period>60</idle_period>
 				<data_upload>1000</data_upload>
 				<data_download>5000</data_download>
 				<task_length>30000</task_length>
 				<required_core>1</required_core>
 			</task_type>
 			<task_type name="mImgTbl" count="3">
-				<active_period>30</active_period>
-				<idle_period>60</idle_period>
 				<data_upload>1000</data_upload>
 				<data_download>5000</data_download>
 				<task_length>30000</task_length>
 				<required_core>1</required_core>
 			</task_type>
 			<task_type name="mAdd" count="3">
-				<active_period>30</active_period>
-				<idle_period>60</idle_period>
 				<data_upload>1000</data_upload>
 				<data_download>5000</data_download>
 				<task_length>30000</task_length>
 				<required_core>1</required_core>
 			</task_type>
 			<task_type name="mShrink" count="2">
-				<active_period>30</active_period>
-				<idle_period>60</idle_period>
 				<data_upload>1000</data_upload>
 				<data_download>5000</data_download>
 				<task_length>30000</task_length>
 				<required_core>1</required_core>
 			</task_type>
 			<task_type name="mJPEG" count="1">
-				<active_period>30</active_period>
-				<idle_period>60</idle_period>
 				<data_upload>1000</data_upload>
 				<data_download>5000</data_download>
 				<task_length>30000</task_length>

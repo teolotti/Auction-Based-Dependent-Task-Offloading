@@ -6,14 +6,22 @@ import java.util.List;
 
 public class WorkflowProperty {
 
+    private String name;
     private List<TaskProperty> taskList;
     private int[][] dependencyMatrix;
     private int workflowType;
     private double startTime;
+    private double deadlineFactor;
     private List<PCP> pcpList;
 
 
-    public WorkflowProperty() {
+    public WorkflowProperty(String name, List<TaskProperty> taskList, int workflowType, double startTime, int[][] dependencyMatrix, double deadlineFactor) {
+        this.name = name;
+        this.taskList = taskList;
+        this.workflowType = workflowType;
+        this.startTime = startTime;
+        this.dependencyMatrix = dependencyMatrix;
+        this.deadlineFactor = deadlineFactor;
     }
 
     public double getStartTime() {

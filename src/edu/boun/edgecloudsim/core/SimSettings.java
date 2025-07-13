@@ -841,6 +841,8 @@ public class SimSettings {
 		// [5] vm utilization on cloud (%)
 		// [6] vm utilization on mobile (%)
 		// [7] deadline factor
+		// [8] active period (sec)
+		// [9] idle period (sec)
 		private double[] properties; // properties of the workflow, e.g., usage percentage, prob. cloud selection, poisson mean, etc.
 
 		public Workflow(String name, int numTasks) {
@@ -879,17 +881,21 @@ public class SimSettings {
 		public int[][] getDependencies() {
 			return dependencies;
 		}
+		public void setProperty(int index, double value) {
+			if (properties == null) {
+				properties = new double[10]; // assuming 10 properties, adjust as needed
+			}
+			properties[index] = value;
+		}
 	}
 
 	public static class TaskNode {
 		private String name;
 		// properties of the task
-		//[0] active period (sec)
-		//[1] idle period (sec)
-		//[2] avg data upload (KB)
-		//[3] avg data download (KB)
-		//[4] avg task length (MI)
-		//[5] required # of cores
+		//[0] avg data upload (KB)
+		//[1] avg data download (KB)
+		//[2] avg task length (MI)
+		//[3] required # of cores
 		private double[] properties;
 		private int index;
 
@@ -935,12 +941,12 @@ public class SimSettings {
 					"vm_utilization_on_edge", //vm utilization on edge vm [0-100]
 					"vm_utilization_on_cloud", //vm utilization on cloud vm [0-100]
 					"vm_utilization_on_mobile", //vm utilization on mobile vm [0-100]
-					"deadline_factor" //deadline factor
+					"deadline_factor", //deadline factor
+					"active_period", //active period (sec)
+					"idle_period", //idle period (sec)
 			};
 
 			String taskAttributes[] = {
-					"active_period", //active period (sec)
-					"idle_period", //idle period (sec)
 					"data_upload", //avg data upload (KB)
 					"data_download", //avg data download (KB)
 					"task_length", //avg task length (MI)
@@ -962,8 +968,8 @@ public class SimSettings {
 
 				for(int m=0; m<workflowAttributes.length; m++){
 					isElementPresent(appElement, workflowAttributes[m]);
-					workflows[i].properties[m] = Double.parseDouble(appElement.
-							getElementsByTagName(workflowAttributes[m]).item(0).getTextContent());
+					workflows[i].setProperty(m, Double.parseDouble(appElement.
+							getElementsByTagName(workflowAttributes[m]).item(0).getTextContent()));
 				}
 
 				NodeList taskList = appElement.getElementsByTagName("task_type");
@@ -1023,6 +1029,8 @@ public class SimSettings {
 		// The implementation is not provided in the original code, so it is assumed to be similar to the parseApplicationsXML method
 		return workflows;
 	}
+
+
 }
 
 
