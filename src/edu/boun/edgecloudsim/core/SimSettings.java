@@ -856,8 +856,8 @@ public class SimSettings {
 
 		}
 
-		public void addDependency(int fromTaskIdx, int toTaskIdx) {
-			dependencies[toTaskIdx][fromTaskIdx] = 1;
+		public void addDependency(int fromTaskIdx, int toTaskIdx, int weight) {
+			dependencies[toTaskIdx][fromTaskIdx] = weight; //weight is the amount of data to be trasmitted
 		}
 
 		public double[] getWorkflowProperties() {
@@ -1006,11 +1006,13 @@ public class SimSettings {
 						int fromTaskCount = Integer.parseInt(dependencyElement.getAttribute("n1"));
 						int toTaskCount = Integer.parseInt(dependencyElement.getAttribute("n2"));
 
+						int weight = Integer.parseInt(dependencyElement.getAttribute("weight"));
+
 						int fromTaskIdx = workflows[i].getNumByTaskNameandCount(fromTaskName, fromTaskCount);
 						int toTaskIdx = workflows[i].getNumByTaskNameandCount(toTaskName, toTaskCount);
 
 						if (fromTaskIdx >= 0 && toTaskIdx >= 0) {
-							workflows[i].addDependency(fromTaskIdx, toTaskIdx);
+							workflows[i].addDependency(fromTaskIdx, toTaskIdx, weight);
 						} else {
 							SimLogger.printLine("Error: Task dependency references non-existing tasks in workflow " + workflows[i].name);
 						}

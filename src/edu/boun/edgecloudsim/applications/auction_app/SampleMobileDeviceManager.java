@@ -30,10 +30,7 @@ package edu.boun.edgecloudsim.applications.auction_app;
 import edu.boun.edgecloudsim.core.SimManager;
 import edu.boun.edgecloudsim.core.SimSettings;
 import edu.boun.edgecloudsim.core.SimSettings.NETWORK_DELAY_TYPES;
-import edu.boun.edgecloudsim.edge_client.CpuUtilizationModel_Custom;
-import edu.boun.edgecloudsim.edge_client.MobileDeviceManager;
-import edu.boun.edgecloudsim.edge_client.PCP;
-import edu.boun.edgecloudsim.edge_client.Task;
+import edu.boun.edgecloudsim.edge_client.*;
 import edu.boun.edgecloudsim.edge_server.EdgeHost;
 import edu.boun.edgecloudsim.edge_server.EdgeVM;
 import edu.boun.edgecloudsim.network.NetworkModel;
@@ -49,7 +46,9 @@ import org.cloudbus.cloudsim.core.CloudSimTags;
 import org.cloudbus.cloudsim.core.SimEvent;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class SampleMobileDeviceManager extends MobileDeviceManager {
 	private static final int BASE = 100000; //start from base in order not to conflict cloudsim tag!
@@ -417,16 +416,128 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 	}
 
 	private void computePCPs(WorkflowProperty workflowProperty) {
+		int [][] taskDependencies = workflowProperty.getDependencyMatrix();
+		// Aggiungi due task dummy (ingresso e uscita) in fondo alla matrice, mantenendo gli indici attuali invariati
+		int n = taskDependencies.length;
+		int[][] extendedMatrix = addDummyTasks(taskDependencies);
+		ArrayList<TaskProperty> extendedTaskList = new ArrayList<>(workflowProperty.getTaskList());
+		// Aggiungi task dummy all'inizio e alla fine della lista
+		extendedTaskList.add(0, new TaskProperty(0, 0, 0, 0, 0, 0, 0)); // Dummy task at the start
+		extendedTaskList.add(new TaskProperty(0, 0, 0, 0, 0, 0, 0)); // Dummy task at the end
+		TaskPCPutils[] taskPCPutils = new TaskPCPutils[extendedMatrix.length];
+		for (int i = extendedMatrix.length; i > 0; i--) {
+			double priority = computePriority(taskPCPutils, extendedMatrix, i - 1, extendedTaskList.get(i-1));
+			taskPCPutils[i-1] = new TaskPCPutils(i, false);
+		}
 		// This method should compute the PCPs (Partial Critical Paths) for the workflow
 		// based on the tasks and their dependencies.
-		List<PCP> pcpList = new ArrayList<PCP>();
-		System.out.println("Compute PCPs");
-		workflowProperty.addPCP(pcpList);
+		SearchPCP(0, extendedMatrix, taskPCPutils, workflowProperty);
+
 	}
 
 	private void PersonalPCP(WorkflowProperty workflowProperty) {
 		// This method should create personal mappings for each task in the workflow
 		// based on the PCPs computed earlier.
 		System.out.println("Creating Personal Mapping for Workflow");
+	}
+
+	private int[][] addDummyTasks(int[][] taskDependencies) {
+		int n = taskDependencies.length;
+	int[][] extendedMatrix = new int[n + 2][n + 2];
+
+	// Copia la matrice originale nella matrice estesa, partendo da 1
+	for (int i = 0; i < n; i++) {
+	    for (int j = 0; j < n; j++) {
+	        extendedMatrix[i + 1][j + 1] = taskDependencies[i][j];
+	    }
+	}
+
+	// Task di ingresso: archi uscenti verso tutti i task senza archi entranti
+	for (int j = 0; j < n; j++) {
+	    boolean hasIncoming = false;
+	    for (int i = 0; i < n; i++) {
+	        if (taskDependencies[i][j] != 0) {
+	            hasIncoming = true;
+	            break;
+	        }
+	    }
+	    if (!hasIncoming) {
+	        extendedMatrix[0][j + 1] = 1; // peso dummy
+	    }
+	}
+
+	// Task di uscita: archi entranti da tutti i task senza archi uscenti
+	for (int i = 0; i < n; i++) {
+	    boolean hasOutgoing = false;
+	    for (int j = 0; j < n; j++) {
+	        if (taskDependencies[i][j] != 0) {
+	            hasOutgoing = true;
+	            break;
+	        }
+	    }
+	    if (!hasOutgoing) {
+	        extendedMatrix[i + 1][n + 1] = 1; // peso dummy
+	    }
+	}
+
+	return extendedMatrix;
+	}
+
+	public double computePriority(TaskPCPutils[] taskPCPutils, int[][] dependencyMatrix, int taskIndex, TaskProperty taskProperty) {
+		// Need a way to get average trasmission rate between edge devices(B) and average processing rate of edge devices(ρ)
+		double averageTransmissionRate = 1.0; // Placeholder for average transmission rate
+		double averageProcessingRate = 1.0; // Placeholder for average processing rate
+		double priority = 0.0;
+		if (taskIndex == dependencyMatrix.length - 1) {
+			// If it's the last task, return a high priority
+			return priority;
+		} else {
+			ArrayList<Integer> successors = getSuccessors(dependencyMatrix, taskIndex);
+			for (int successor : successors) {
+				TaskPCPutils successorTask = taskPCPutils[successor];
+				// Get the max of the successor for this formula: priority + weight in depMatrix / averageTransmissionRate
+				priority = Math.max(priority,
+						successorTask.getPriority() + dependencyMatrix[taskIndex][successor] / averageTransmissionRate);
+			}
+		}
+		priority += taskProperty.getLength() / averageProcessingRate; // Add the processing time of the current task
+		return priority;
+	}
+
+	public ArrayList<Integer> getSuccessors(int[][] dependencyMatrix, int taskIndex) {
+		ArrayList<Integer> successors = new ArrayList<>();
+		for (int j = 0; j < dependencyMatrix[taskIndex].length; j++) {
+			if (dependencyMatrix[taskIndex][j] > 0) {
+				successors.add(j);
+			}
+		}
+		return successors;
+	}
+
+	public void SearchPCP(int taskIndex, int[][] dependencyMatrix, TaskPCPutils[] taskPCPutils, WorkflowProperty workflowProperty) {
+		// This method should implement the search for Partial Critical Paths (PCPs)
+		// based on the task dependencies and the computed priorities.
+		// It should populate the pcpList with the found PCPs.
+
+		//find successors of the current task that are not marked but all its predecessors are marked
+
+		ArrayList<Integer> candidateSuccessors = getSuccessors(dependencyMatrix, taskIndex);
+
+		boolean candidate = false;
+		for (int successor : candidateSuccessors) {
+			if (!taskPCPutils[successor].isMarked()) {
+				candidate = true;
+				for (int i = 0; i < dependencyMatrix.length; i++) {
+					if (dependencyMatrix[i][successor] > 0 && !taskPCPutils[i].isMarked()) {
+						candidate = false;
+						break;
+					}
+				}
+			}
+			if (!candidate) {
+				candidateSuccessors.remove(Integer.valueOf(successor));
+			}
+		}
+
 	}
 }

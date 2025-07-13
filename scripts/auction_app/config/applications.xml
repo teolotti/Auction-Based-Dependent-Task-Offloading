@@ -68,45 +68,44 @@
 			</task_type>
 		</task_types>
 		<task_dependencies>
-			<dependency from="mProjectPP" n1="1" to="mDiffFit" n2="1"/>
-			<dependency from="mProjectPP" n1="2" to="mDiffFit" n2="1"/>
-			<dependency from="mProjectPP" n1="1" to="mDiffFit" n2="2"/>
-			<dependency from="mProjectPP" n1="3" to="mDiffFit" n2="2"/>
-			<dependency from="mProjectPP" n1="1" to="mDiffFit" n2="3"/>
-			<dependency from="mProjectPP" n1="4" to="mDiffFit" n2="3"/>
-			<dependency from="mProjectPP" n1="2" to="mDiffFit" n2="4"/>
-			<dependency from="mProjectPP" n1="3" to="mDiffFit" n2="4"/>
-			<dependency from="mProjectPP" n1="2" to="mDiffFit" n2="5"/>
-			<dependency from="mProjectPP" n1="4" to="mDiffFit" n2="5"/>
-			<dependency from="mProjectPP" n1="3" to="mDiffFit" n2="6"/>
-			<dependency from="mProjectPP" n1="4" to="mDiffFit" n2="6"/>
-			<dependency from="mDiffFit" n1="1" to="mConcatFit" n2="1"/>
-			<dependency from="mDiffFit" n1="2" to="mConcatFit" n2="1"/>
-			<dependency from="mDiffFit" n1="3" to="mConcatFit" n2="1"/>
-			<dependency from="mDiffFit" n1="4" to="mConcatFit" n2="1"/>
-			<dependency from="mDiffFit" n1="5" to="mConcatFit" n2="1"/>
-			<dependency from="mDiffFit" n1="6" to="mConcatFit" n2="1"/>
-			<dependency from="mConcatFit" n1="1" to="mBgModel" n2="1"/>
-			<dependency from="mBgModel" n1="1" to="mBackground" n2="1"/>
-			<dependency from="mBgModel" n1="1" to="mBackground" n2="2"/>
-			<dependency from="mBgModel" n1="1" to="mBackground" n2="3"/>
-			<dependency from="mBgModel" n1="1" to="mBackground" n2="4"/>
-			<dependency from="mProjectP" n1="1" to="mBackground" n2="1"/>
-			<dependency from="mProjectP" n1="2" to="mBackground" n2="2"/>
-			<dependency from="mProjectP" n1="3" to="mBackground" n2="3"/>
-			<dependency from="mProjectP" n1="4" to="mBackground" n2="4"/>
-			<dependency from="mBackground" n1="1" to="mImgTbl" n2="1"/>
-			<dependency from="mBackground" n1="2" to="mImgTbl" n2="1"/>
-			<dependency from="mBackground" n1="3" to="mImgTbl" n2="2"/>
-			<dependency from="mBackground" n1="4" to="mImgTbl" n2="2"/>
-			<dependency from="mImgTbl" n1="1" to="mAdd" n2="1"/>
-			<dependency from="mImgTbl" n1="2" to="mAdd" n2="2"/>
-			<dependency from="mAdd" n1="1" to="mShrink" n2="1"/>
-			<dependency from="mAdd" n1="2" to="mShrink" n2="2"/>
-			<dependency from="mShrink" n1="1" to="mImgTbl" n2="3"/>
-			<dependency from="mShrink" n1="2" to="mImgTbl" n2="3"/>
-			<dependency from="mImgTbl" n1="3" to="mAdd" n2="3"/>
-			<dependency from="mImgTbl" n1="3" to="mJPEG" n2="1"/>
+			<dependency from="mProjectPP" n1="2" to="mDiffFit" n2="1" weight="1000"/>
+			<dependency from="mProjectPP" n1="1" to="mDiffFit" n2="2" weight="1000"/>
+			<dependency from="mProjectPP" n1="3" to="mDiffFit" n2="2" weight="1000"/>
+			<dependency from="mProjectPP" n1="1" to="mDiffFit" n2="3" weight="1000"/>
+			<dependency from="mProjectPP" n1="4" to="mDiffFit" n2="3" weight="1000"/>
+			<dependency from="mProjectPP" n1="2" to="mDiffFit" n2="4" weight="1000"/>
+			<dependency from="mProjectPP" n1="3" to="mDiffFit" n2="4" weight="1000"/>
+			<dependency from="mProjectPP" n1="2" to="mDiffFit" n2="5" weight="1000"/>
+			<dependency from="mProjectPP" n1="4" to="mDiffFit" n2="5" weight="1000"/>
+			<dependency from="mProjectPP" n1="3" to="mDiffFit" n2="6" weight="1000"/>
+			<dependency from="mProjectPP" n1="4" to="mDiffFit" n2="6" weight="1000"/>
+			<dependency from="mDiffFit" n1="1" to="mConcatFit" n2="1" weight="1000"/>
+			<dependency from="mDiffFit" n1="2" to="mConcatFit" n2="1" weight="1000"/>
+			<dependency from="mDiffFit" n1="3" to="mConcatFit" n2="1" weight="1000"/>
+			<dependency from="mDiffFit" n1="4" to="mConcatFit" n2="1" weight="1000"/>
+			<dependency from="mDiffFit" n1="5" to="mConcatFit" n2="1" weight="1000"/>
+			<dependency from="mDiffFit" n1="6" to="mConcatFit" n2="1" weight="1000"/>
+			<dependency from="mConcatFit" n1="1" to="mBgModel" n2="1" weight="1000"/>
+			<dependency from="mBgModel" n1="1" to="mBackground" n2="1" weight="1000"/>
+			<dependency from="mBgModel" n1="1" to="mBackground" n2="2" weight="1000"/>
+			<dependency from="mBgModel" n1="1" to="mBackground" n2="3" weight="1000"/>
+			<dependency from="mBgModel" n1="1" to="mBackground" n2="4" weight="1000"/>
+			<dependency from="mProjectP" n1="1" to="mBackground" n2="1" weight="1000"/>
+			<dependency from="mProjectP" n1="2" to="mBackground" n2="2" weight="1000"/>
+			<dependency from="mProjectP" n1="3" to="mBackground" n2="3" weight="1000"/>
+			<dependency from="mProjectP" n1="4" to="mBackground" n2="4" weight="1000"/>
+			<dependency from="mBackground" n1="1" to="mImgTbl" n2="1" weight="1000"/>
+			<dependency from="mBackground" n1="2" to="mImgTbl" n2="1" weight="1000"/>
+			<dependency from="mBackground" n1="3" to="mImgTbl" n2="2" weight="1000"/>
+			<dependency from="mBackground" n1="4" to="mImgTbl" n2="2" weight="1000"/>
+			<dependency from="mImgTbl" n1="1" to="mAdd" n2="1" weight="1000"/>
+			<dependency from="mImgTbl" n1="2" to="mAdd" n2="2" weight="1000"/>
+			<dependency from="mAdd" n1="1" to="mShrink" n2="1" weight="1000"/>
+			<dependency from="mAdd" n1="2" to="mShrink" n2="2" weight="1000"/>
+			<dependency from="mShrink" n1="1" to="mImgTbl" n2="3" weight="1000"/>
+			<dependency from="mShrink" n1="2" to="mImgTbl" n2="3" weight="1000"/>
+			<dependency from="mImgTbl" n1="3" to="mAdd" n2="3" weight="1000"/>
+			<dependency from="mImgTbl" n1="3" to="mJPEG" n2="1" weight="1000"/>
 		</task_dependencies>
 	</application>
 </applications>

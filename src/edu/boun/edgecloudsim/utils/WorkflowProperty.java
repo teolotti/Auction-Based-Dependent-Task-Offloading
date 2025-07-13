@@ -2,20 +2,20 @@ package edu.boun.edgecloudsim.utils;
 
 import edu.boun.edgecloudsim.edge_client.PCP;
 
-import java.util.List;
+import java.util.ArrayList;
 
 public class WorkflowProperty {
 
     private String name;
-    private List<TaskProperty> taskList;
+    private ArrayList<TaskProperty> taskList;
     private int[][] dependencyMatrix;
     private int workflowType;
     private double startTime;
     private double deadlineFactor;
-    private List<PCP> pcpList;
+    private ArrayList<PCP> pcpList;
 
 
-    public WorkflowProperty(String name, List<TaskProperty> taskList, int workflowType, double startTime, int[][] dependencyMatrix, double deadlineFactor) {
+    public WorkflowProperty(String name, ArrayList<TaskProperty> taskList, int workflowType, double startTime, int[][] dependencyMatrix, double deadlineFactor) {
         this.name = name;
         this.taskList = taskList;
         this.workflowType = workflowType;
@@ -32,19 +32,19 @@ public class WorkflowProperty {
         this.startTime = startTime;
     }
 
-    public List<TaskProperty> getTaskList() {
+    public ArrayList<TaskProperty> getTaskList() {
         return taskList;
     }
 
-    public void addTask(List<TaskProperty> taskList) {
+    public void addTask(ArrayList<TaskProperty> taskList) {
         this.taskList = taskList;
     }
 
-    public void addPCP(List<PCP> pcpList) {
+    public void addPCP(ArrayList<PCP> pcpList) {
         this.pcpList = pcpList;
     }
 
-    public List<PCP> getPcpList() {
+    public ArrayList<PCP> getPcpList() {
         return pcpList;
     }
 
