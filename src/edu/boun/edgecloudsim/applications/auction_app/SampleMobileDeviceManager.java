@@ -46,9 +46,7 @@ import org.cloudbus.cloudsim.core.CloudSimTags;
 import org.cloudbus.cloudsim.core.SimEvent;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class SampleMobileDeviceManager extends MobileDeviceManager {
@@ -438,7 +436,29 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 	private void PersonalPCP(WorkflowProperty workflowProperty) {
 		// This method should create personal mappings for each task in the workflow
 		// based on the PCPs computed earlier.
+		int numofEdgeHosts = SimSettings.getInstance().getNumOfEdgeHosts();
+		double [] readyTimes = new double[numofEdgeHosts];
+		//getReadyTimes();
 		System.out.println("Creating Personal Mapping for Workflow");
+		// ArrayList<EdgeStatus> statuses = SimManager.getInstance().getEdgeServerManager().getEdgeDevicesStatus();
+		Map<Integer, List<TaskAssignmentInfo>> personalMappings = new HashMap<>();
+		for (PCP pcp : workflowProperty.getPcpList()) {
+			int edgeDeviceId = 0;
+			double maxfinishTime = Double.POSITIVE_INFINITY;
+			List<TaskAssignmentInfo> taskAssignmentInfos = new ArrayList<>();
+			for (int i = 0; i < numofEdgeHosts; i++) {
+				// Get the status of the edge device
+				// EdgeStatus status = statuses.get(i);
+				// Check if the edge device is available and has enough resources
+				// if (status.isAvailable() && status.hasEnoughResources()) {
+				// For simplicity, we assume all edge devices are available and have enough resources
+				double finishTime = 0.0; // This should be calculated based on the task properties
+				if (finishTime < maxfinishTime) {
+					maxfinishTime = finishTime;
+					edgeDeviceId = i;
+				}
+			}
+		}
 	}
 
 	private int[][] addDummyTasks(int[][] taskDependencies) {
