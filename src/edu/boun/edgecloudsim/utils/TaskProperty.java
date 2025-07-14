@@ -20,6 +20,8 @@ public class TaskProperty {
 	private int taskType;
 	private int pesNumber;
 	private int mobileDeviceId;
+	private int TaskAppId;
+	private int AppId;
 
 	public TaskProperty(double _startTime, int _mobileDeviceId, int _taskType, int _pesNumber, long _length, long _inputFileSize, long _outputFileSize) {
 		startTime=_startTime;

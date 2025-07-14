@@ -35,6 +35,9 @@ public class WorkflowLoadGenerator extends LoadGeneratorModel {
                 expRngList[i].add(distributions);
             }
         }
+        // Valuta se servono distribuzioni esponenziali per input/output file size e task length oppure no
+
+
         // Each mobile device utilizes an app type (workflow type)
         workflowTypeOfDevices = new int[numberOfMobileDevices];
         for (int i = 0; i < numberOfMobileDevices; i++) {
@@ -61,6 +64,7 @@ public class WorkflowLoadGenerator extends LoadGeneratorModel {
             double activePeriod = SimSettings.getInstance().getWorkflows()[randomWorkflowType].getWorkflowProperties()[8];
             double idlePeriod = SimSettings.getInstance().getWorkflows()[randomWorkflowType].getWorkflowProperties()[9];
             double deadline_factor = SimSettings.getInstance().getWorkflows()[randomWorkflowType].getWorkflowProperties()[7];
+            //TODO: Compute deadline
             double activePeriodStartTime = SimUtils.getRandomDoubleNumber(SimSettings.CLIENT_ACTIVITY_START_TIME,
                     SimSettings.CLIENT_ACTIVITY_START_TIME +activePeriod);
             double virtualTime = activePeriodStartTime;
@@ -101,7 +105,8 @@ public class WorkflowLoadGenerator extends LoadGeneratorModel {
                         randomWorkflowType,
                         virtualTime,
                         SimSettings.getInstance().getWorkflows()[randomWorkflowType].getDependencies(),
-                        deadline_factor
+                        deadline_factor,
+                        i
                 ));
             }
         }
