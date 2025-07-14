@@ -9,8 +9,8 @@
 		<vm_utilization_on_cloud>1</vm_utilization_on_cloud>
 		<vm_utilization_on_mobile>0</vm_utilization_on_mobile>
 		<deadline_factor>6</deadline_factor>
-		<active_period>30</active_period>
-		<idle_period>60</idle_period>
+		<data_upload>1000</data_upload>
+		<data_download>5000</data_download>
 		<task_types>
 			<task_type name="mProjectPP" count="4">
 				<data_upload>1000</data_upload>
@@ -118,8 +118,8 @@
 		<vm_utilization_on_cloud>1</vm_utilization_on_cloud>
 		<vm_utilization_on_mobile>0</vm_utilization_on_mobile>
 		<deadline_factor>6</deadline_factor>
-		<active_period>30</active_period>
-		<idle_period>60</idle_period>
+		<data_upload>1000</data_upload>
+		<data_download>5000</data_download>
 		<task_types>
 			<task_type name="ExtractSGT" count="2">
 				<data_upload>1000</data_upload>
@@ -204,8 +204,8 @@
 		<vm_utilization_on_cloud>1</vm_utilization_on_cloud>
 		<vm_utilization_on_mobile>0</vm_utilization_on_mobile>
 		<deadline_factor>6</deadline_factor>
-		<active_period>30</active_period>
-		<idle_period>60</idle_period>
+		<data_upload>1000</data_upload>
+		<data_download>5000</data_download>
 		<task_types>
 			<task_type name="fastQSplit" count="1">
 				<data_upload>1000</data_upload>

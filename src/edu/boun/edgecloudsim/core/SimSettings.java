@@ -88,6 +88,8 @@ public class SimSettings {
 	private int RAM_FOR_VM; //MB
 	private int STORAGE_FOR_VM; //Byte
 
+	private int MIPS_FOR_EDGE_VM; //MIPS
+
 	private String[] SIMULATION_SCENARIOS;
 	private String[] ORCHESTRATOR_POLICIES;
 
@@ -573,6 +575,14 @@ public class SimSettings {
 	}
 
 	/**
+	 * returns MIPS of the edge VMs
+	 */
+	public int getMipsForEdgeVM()
+	{
+		return MIPS_FOR_EDGE_VM;
+	}
+
+	/**
 	 * returns simulation screnarios as string
 	 */
 	public String[] getSimulationScenarios()
@@ -789,6 +799,7 @@ public class SimSettings {
 					NUM_OF_PLACE_TYPES = placeTypeIndex+1;
 
 				NodeList hostList = datacenterElement.getElementsByTagName("host");
+				int totalMips = 0;
 				for (int j = 0; j < hostList.getLength(); j++) {
 					NUM_OF_EDGE_HOSTS++;
 					Node hostNode = hostList.item(j);
@@ -800,6 +811,7 @@ public class SimSettings {
 					isElementPresent(hostElement, "storage");
 
 					NodeList vmList = hostElement.getElementsByTagName("VM");
+
 					for (int k = 0; k < vmList.getLength(); k++) {
 						NUM_OF_EDGE_VMS++;
 						Node vmNode = vmList.item(k);
@@ -810,7 +822,15 @@ public class SimSettings {
 						isElementPresent(vmElement, "mips");
 						isElementPresent(vmElement, "ram");
 						isElementPresent(vmElement, "storage");
+
+						totalMips += Integer.parseInt(vmElement.getElementsByTagName("mips").item(0).getTextContent());
 					}
+				}
+				if (totalMips > 0) {
+					// set MIPS for edge VMs
+					MIPS_FOR_EDGE_VM = totalMips / NUM_OF_EDGE_VMS;
+				} else {
+					MIPS_FOR_EDGE_VM = 1000; // default value if no VMs are defined
 				}
 			}
 
@@ -942,8 +962,8 @@ public class SimSettings {
 					"vm_utilization_on_cloud", //vm utilization on cloud vm [0-100]
 					"vm_utilization_on_mobile", //vm utilization on mobile vm [0-100]
 					"deadline_factor", //deadline factor
-					"active_period", //active period (sec)
-					"idle_period", //idle period (sec)
+					"data_upload", //avg data upload (KB)
+					"data_download", //avg data download (KB)
 			};
 
 			String taskAttributes[] = {

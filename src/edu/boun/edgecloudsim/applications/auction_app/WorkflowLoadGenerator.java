@@ -30,7 +30,7 @@ public class WorkflowLoadGenerator extends LoadGeneratorModel {
             for(int k = 0; k < SimSettings.getInstance().getWorkflows()[i].getTasks().length; k++){
                 ExponentialDistribution[] distributions = new ExponentialDistribution[3];
                 for (int j = 0; j < 3; j++) {
-                    distributions[j] = new ExponentialDistribution(SimSettings.getInstance().getWorkflows()[i].getWorkflowProperties()[j]); // Sostituisci 1.0 con il parametro desiderato
+                    distributions[j] = new ExponentialDistribution(SimSettings.getInstance().getWorkflows()[i].getTasks()[k].getTaskNodeProperties()[j]); // Sostituisci 1.0 con il parametro desiderato
                 }
                 expRngList[i].add(distributions);
             }
@@ -61,54 +61,54 @@ public class WorkflowLoadGenerator extends LoadGeneratorModel {
 
             // Generate tasks for the selected workflow type
             double poissonMean = SimSettings.getInstance().getWorkflows()[randomWorkflowType].getWorkflowProperties()[2];
-            double activePeriod = SimSettings.getInstance().getWorkflows()[randomWorkflowType].getWorkflowProperties()[8];
-            double idlePeriod = SimSettings.getInstance().getWorkflows()[randomWorkflowType].getWorkflowProperties()[9];
             double deadline_factor = SimSettings.getInstance().getWorkflows()[randomWorkflowType].getWorkflowProperties()[7];
-            //TODO: Compute deadline
-            double activePeriodStartTime = SimUtils.getRandomDoubleNumber(SimSettings.CLIENT_ACTIVITY_START_TIME,
-                    SimSettings.CLIENT_ACTIVITY_START_TIME +activePeriod);
+            double dataUploadSize = SimSettings.getInstance().getWorkflows()[randomWorkflowType].getWorkflowProperties()[8];
+            double dataDownloadSize = SimSettings.getInstance().getWorkflows()[randomWorkflowType].getWorkflowProperties()[9];
+            double activePeriodStartTime = SimSettings.CLIENT_ACTIVITY_START_TIME;
             double virtualTime = activePeriodStartTime;
 
             ExponentialDistribution rng = new ExponentialDistribution(poissonMean);
-            while(virtualTime < activePeriodStartTime) {
-                double interArrivalTime = rng.sample();
 
-                if (interArrivalTime < 0) {
-                    SimLogger.printLine("Impossible is occurred! Inter-arrival time is " + interArrivalTime + " for device " + i + " at time " + virtualTime);
-                    continue;
-                }
-                virtualTime += interArrivalTime;
+            double interArrivalTime = rng.sample();
 
-                if (virtualTime > activePeriodStartTime + activePeriod) {
-                    activePeriodStartTime = activePeriodStartTime + activePeriod + idlePeriod;
-                    virtualTime = activePeriodStartTime;
-                    continue;
-                }
-
-                ArrayList<TaskProperty> taskList = new ArrayList<>();
-                for (int k = 0; k < SimSettings.getInstance().getWorkflows()[randomWorkflowType].getTasks().length; k++) {
-                    // Create tasks for the workflow
-                    TaskProperty taskProperty = new TaskProperty(
-                            virtualTime,
-                            i,
-                            randomWorkflowType,
-                            1, // Assuming 1 PEs for simplicity, can be adjusted
-                            (long) expRngList[randomWorkflowType].get(k)[0].sample(), // Length
-                            (long) expRngList[randomWorkflowType].get(k)[1].sample(), // Input file size
-                            (long) expRngList[randomWorkflowType].get(k)[2].sample()  // Output file size
-                    );
-                    taskList.add(taskProperty);
-                }
-                workflowList.add(new WorkflowProperty(
-                        SimSettings.getInstance().getWorkflows()[randomWorkflowType].getName(),
-                        taskList,
-                        randomWorkflowType,
-                        virtualTime,
-                        SimSettings.getInstance().getWorkflows()[randomWorkflowType].getDependencies(),
-                        deadline_factor,
-                        i
-                ));
+            if (interArrivalTime < 0) {
+                SimLogger.printLine("Impossible is occurred! Inter-arrival time is " + interArrivalTime + " for device " + i + " at time " + virtualTime);
+                continue;
             }
+            virtualTime += interArrivalTime;
+            double totalLength = 0.0;
+            for (int k = 0; k < SimSettings.getInstance().getWorkflows()[randomWorkflowType].getTasks().length; k++) {
+                totalLength += SimSettings.getInstance().getWorkflows()[randomWorkflowType].getTasks()[k].getTaskNodeProperties()[2]; // Assuming the length is at index 2
+            }
+            double basicMakespan = totalLength / SimSettings.getInstance().getMipsForEdgeVM();
+            double deadline = virtualTime + basicMakespan * deadline_factor;
+
+
+            ArrayList<TaskProperty> taskList = new ArrayList<>();
+            for (int k = 0; k < SimSettings.getInstance().getWorkflows()[randomWorkflowType].getTasks().length; k++) {
+                // Create tasks for the workflow
+                TaskProperty taskProperty = new TaskProperty(
+                        virtualTime,
+                        i,
+                        randomWorkflowType,
+                        1, // Assuming 1 PEs for simplicity, can be adjusted
+                        (long) expRngList[randomWorkflowType].get(k)[0].sample(), // Length
+                        (long) expRngList[randomWorkflowType].get(k)[1].sample(), // Input file size
+                        (long) expRngList[randomWorkflowType].get(k)[2].sample()  // Output file size
+                );
+                taskList.add(taskProperty);
+            }
+            workflowList.add(new WorkflowProperty(
+                    SimSettings.getInstance().getWorkflows()[randomWorkflowType].getName(),
+                    taskList,
+                    randomWorkflowType,
+                    virtualTime,
+                    SimSettings.getInstance().getWorkflows()[randomWorkflowType].getDependencies(),
+                    deadline,
+                    i,
+                    (long)dataUploadSize,
+                    (long)dataDownloadSize
+            ));
         }
     }
 

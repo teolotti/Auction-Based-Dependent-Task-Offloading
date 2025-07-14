@@ -11,19 +11,23 @@ public class WorkflowProperty {
     private int[][] dependencyMatrix;
     private int workflowType;
     private double startTime;
-    private double deadlineFactor;
+    private double deadline;
     private ArrayList<PCP> pcpList;
     private int mobileDeviceId;
+    private long uploadSize, downloadSize;
 
 
-    public WorkflowProperty(String name, ArrayList<TaskProperty> taskList, int workflowType, double startTime, int[][] dependencyMatrix, double deadlineFactor, int mobileDeviceId) {
+
+    public WorkflowProperty(String name, ArrayList<TaskProperty> taskList, int workflowType, double startTime, int[][] dependencyMatrix, double deadline, int mobileDeviceId, long uploadSize, long downloadSize) {
         this.name = name;
         this.taskList = taskList;
         this.workflowType = workflowType;
         this.startTime = startTime;
         this.dependencyMatrix = dependencyMatrix;
-        this.deadlineFactor = deadlineFactor;
+        this.deadline = deadline;
         this.mobileDeviceId = mobileDeviceId;
+        this.uploadSize = uploadSize;
+        this.downloadSize = downloadSize;
     }
 
     public double getStartTime() {
