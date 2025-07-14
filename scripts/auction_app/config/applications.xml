@@ -68,6 +68,7 @@
 			</task_type>
 		</task_types>
 		<task_dependencies>
+			<dependency from="mProjectPP" n1="1" to="mDiffFit" n2="1" weight="1000"/>
 			<dependency from="mProjectPP" n1="2" to="mDiffFit" n2="1" weight="1000"/>
 			<dependency from="mProjectPP" n1="1" to="mDiffFit" n2="2" weight="1000"/>
 			<dependency from="mProjectPP" n1="3" to="mDiffFit" n2="2" weight="1000"/>
