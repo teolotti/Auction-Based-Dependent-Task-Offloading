@@ -26,7 +26,11 @@ import org.cloudbus.cloudsim.UtilizationModelFull;
 import org.cloudbus.cloudsim.Vm;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.core.SimEvent;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Deque;
 
+import edu.boun.edgecloudsim.applications.auction_app.Request;
 import java.util.List;
 
 public class SampleEdgeOrchestrator extends EdgeOrchestrator {
@@ -104,44 +108,26 @@ public class SampleEdgeOrchestrator extends EdgeOrchestrator {
 	@Override
 	public Vm getVmToOffload(Task task, int deviceId) {
 		Vm selectedVM = null;
-		
-		if(deviceId == SimSettings.CLOUD_DATACENTER_ID){
-			//Select VM on cloud devices via Least Loaded algorithm!
-			double selectedVmCapacity = 0; //start with min value
-			List<Host> list = SimManager.getInstance().getCloudServerManager().getDatacenter().getHostList();
-			for (int hostIndex=0; hostIndex < list.size(); hostIndex++) {
-				List<CloudVM> vmArray = SimManager.getInstance().getCloudServerManager().getVmList(hostIndex);
-				for(int vmIndex=0; vmIndex<vmArray.size(); vmIndex++){
-					double requiredCapacity = ((CpuUtilizationModel_Custom)task.getUtilizationModelCpu()).predictUtilization(vmArray.get(vmIndex).getVmType());
-					double targetVmCapacity = (double)100 - vmArray.get(vmIndex).getCloudletScheduler().getTotalUtilizationOfCpu(CloudSim.clock());
-					if(requiredCapacity <= targetVmCapacity && targetVmCapacity > selectedVmCapacity){
-						selectedVM = vmArray.get(vmIndex);
-						selectedVmCapacity = targetVmCapacity;
-					}
-	            }
-			}
-		}
-		else if(deviceId == SimSettings.GENERIC_EDGE_DEVICE_ID){
-			//Select VM on edge devices via Least Loaded algorithm!
-			double selectedVmCapacity = 0; //start with min value
-			for(int hostIndex=0; hostIndex<numberOfHost; hostIndex++){
-				List<EdgeVM> vmArray = SimManager.getInstance().getEdgeServerManager().getVmList(hostIndex);
-				for(int vmIndex=0; vmIndex<vmArray.size(); vmIndex++){
-					double requiredCapacity = ((CpuUtilizationModel_Custom)task.getUtilizationModelCpu()).predictUtilization(vmArray.get(vmIndex).getVmType());
-					double targetVmCapacity = (double)100 - vmArray.get(vmIndex).getCloudletScheduler().getTotalUtilizationOfCpu(CloudSim.clock());
-					if(requiredCapacity <= targetVmCapacity && targetVmCapacity > selectedVmCapacity){
-						selectedVM = vmArray.get(vmIndex);
-						selectedVmCapacity = targetVmCapacity;
-					}
-				}
-			}
-		}
-		else{
-			SimLogger.printLine("Unknown device id! The simulation has been terminated.");
-			System.exit(0);
-		}
+		List<EdgeVM> vmArray = SimManager.getInstance().getEdgeServerManager().getVmList(deviceId);
+		selectedVM = vmArray.get(0);
 		
 		return selectedVM;
+	}
+	
+	public AuctionResult auction(Deque<Request> requests) {
+		
+		Request[] a = requests.toArray(new Request[0]);
+		Arrays.sort(a, (r1, r2) -> 
+	    Double.compare(
+	        r2.getBid() / r2.getProcessingEstimated(),
+	        r1.getBid() / r1.getProcessingEstimated()));
+		int winnerId = a[0].getId();
+		double payment = a[0].getBid();
+		if(requests.size() > 1) {
+			payment = (a[1].getBid()/a[1].getProcessingEstimated()) * a[0].getProcessingEstimated();
+		}
+		
+		return new AuctionResult(winnerId, payment);
 	}
 
 	@Override

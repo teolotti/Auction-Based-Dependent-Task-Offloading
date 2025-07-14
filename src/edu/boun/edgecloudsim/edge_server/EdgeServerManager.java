@@ -21,6 +21,7 @@ import java.util.List;
 
 import org.cloudbus.cloudsim.Datacenter;
 import org.cloudbus.cloudsim.Host;
+import org.cloudbus.cloudsim.ResCloudlet;
 import org.cloudbus.cloudsim.VmAllocationPolicy;
 
 public abstract class EdgeServerManager {
@@ -68,4 +69,6 @@ public abstract class EdgeServerManager {
 	 * returns average utilization of all VMs
 	 */
 	public abstract double getAvgUtilization();
+	
+	public abstract ArrayList<EdgeStatus> getEdgeDevicesStatus();
 }

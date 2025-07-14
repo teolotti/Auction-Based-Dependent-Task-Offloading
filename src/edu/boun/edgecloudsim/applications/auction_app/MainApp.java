@@ -74,9 +74,9 @@ public class MainApp {
 
 		for(int j=SS.getMinNumOfMobileDev(); j<=SS.getMaxNumOfMobileDev(); j+=SS.getMobileDevCounterSize())
 		{
-			for(int k=0; k<SS.getSimulationScenarios().length; k++)
+			for(int k=0; k<1; k++)
 			{
-				for(int i=0; i<SS.getOrchestratorPolicies().length; i++)
+				for(int i=0; i<1; i++)
 				{
 					String simScenario = SS.getSimulationScenarios()[k];
 					String orchestratorPolicy = SS.getOrchestratorPolicies()[i];
