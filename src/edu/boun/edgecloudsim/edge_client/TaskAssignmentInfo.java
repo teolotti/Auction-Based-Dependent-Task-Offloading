@@ -5,6 +5,7 @@ public class TaskAssignmentInfo {
     double predictedStartTime;
     double predictedFinishTime;
     double EdgeAvailableTime;
+    boolean isAssigned = false;
 
     public TaskAssignmentInfo(){};
 
@@ -39,6 +40,14 @@ public class TaskAssignmentInfo {
 
     public void setEdgeAvailableTime(double edgeAvailableTime) {
         EdgeAvailableTime = edgeAvailableTime;
+    }
+
+    public boolean isAssigned() {
+        return isAssigned;
+    }
+
+    public void setAssigned(boolean assigned) {
+        isAssigned = assigned;
     }
 
 }

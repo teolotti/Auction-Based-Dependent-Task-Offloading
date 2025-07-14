@@ -73,4 +73,23 @@ public class WorkflowProperty {
         this.dependencyMatrix = dependencyMatrix;
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public double getDeadline() {
+        return deadline;
+    }
+
+    public int getMobileDeviceId() {
+        return mobileDeviceId;
+    }
+
+    public long getUploadSize() {
+        return uploadSize;
+    }
+
+    public long getDownloadSize() {
+        return downloadSize;
+    }
 }

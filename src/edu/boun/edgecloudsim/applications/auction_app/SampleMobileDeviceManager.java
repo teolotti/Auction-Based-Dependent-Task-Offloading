@@ -542,13 +542,17 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		// based on the PCPs computed earlier.
 		int numofEdgeHosts = SimSettings.getInstance().getNumOfEdgeHosts();
 		double [] readyTimes = new double[numofEdgeHosts];
-		//getReadyTimes();
 		System.out.println("Creating Personal Mapping for Workflow");
 		Map<Integer, List<TaskAssignmentInfo>> personalMappings = new HashMap<>();
-		// ArrayList<EdgeStatus> statuses = SimManager.getInstance().getEdgeServerManager().getEdgeDevicesStatus();
 		for (int i = 0; i < numofEdgeHosts; i++) {
-			readyTimes[i] = 0.0; // Initialize ready times for each edge host, to be inizialized based on the actual status of the edge devices
-			personalMappings.get(i).set(0, new TaskAssignmentInfo(0, workflowProperty.getStartTime(), workflowProperty.getStartTime(), readyTimes[i]));
+			personalMappings.put(i, new ArrayList<>());
+			for (int j = 0; j < workflowProperty.getTaskList().size(); j++) {
+				personalMappings.get(i).add(new TaskAssignmentInfo(j, 0.0, 0.0, 0.0));
+			}
+		}
+		ArrayList<EdgeStatus> statuses = SimManager.getInstance().getEdgeServerManager().getEdgeDevicesStatus();
+		for (int i = 0; i < numofEdgeHosts; i++) {
+			readyTimes[i] = statuses.get(i).getWaitingTime();
 		}
 
 		for (PCP pcp : workflowProperty.getPcpList()) {
