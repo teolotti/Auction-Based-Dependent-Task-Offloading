@@ -145,7 +145,7 @@ public class StatEdgeServerManager extends EdgeServerManager{
 
 				    double remainingMI = 0.0;
 					for (ResCloudlet c : vm.getCloudletScheduler().getCloudletExecList())
-				        remainingMI += c.getCloudletLength() - c.getRemainingCloudletLength();
+				        remainingMI += c.getRemainingCloudletLength();
 
 				    for (ResCloudlet c : vm.getCloudletScheduler().getCloudletWaitingList())
 				        remainingMI += c.getCloudletLength();
