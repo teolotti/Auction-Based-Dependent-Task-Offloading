@@ -108,4 +108,177 @@
 			<dependency from="mImgTbl" n1="3" to="mJPEG" n2="1" weight="1000"/>
 		</task_dependencies>
 	</application>
+	<application name="CYBERSHAKE" num_task="20">
+		<usage_percentage>30</usage_percentage>
+		<prob_cloud_selection>20</prob_cloud_selection>
+		<poisson_interarrival>2</poisson_interarrival>
+		<delay_sensitivity>0</delay_sensitivity>
+		<vm_utilization_on_edge>10</vm_utilization_on_edge>
+		<vm_utilization_on_cloud>1</vm_utilization_on_cloud>
+		<vm_utilization_on_mobile>0</vm_utilization_on_mobile>
+		<deadline_factor>6</deadline_factor>
+		<active_period>30</active_period>
+		<idle_period>60</idle_period>
+		<task_types>
+			<task_type name="ExtractSGT" count="2">
+				<data_upload>1000</data_upload>
+				<data_download>5000</data_download>
+				<task_length>30000</task_length>
+				<required_core>1</required_core>
+			</task_type>
+			<task_type name="SeismogramSynthesis" count="8">
+				<data_upload>1000</data_upload>
+				<data_download>5000</data_download>
+				<task_length>30000</task_length>
+				<required_core>1</required_core>
+			</task_type>
+			<task_type name="ZipSeis" count="1">
+				<data_upload>1000</data_upload>
+				<data_download>5000</data_download>
+				<task_length>30000</task_length>
+				<required_core>1</required_core>
+			</task_type>
+			<task_type name="PeakValCalcOkaya" count="8">
+				<data_upload>1000</data_upload>
+				<data_download>5000</data_download>
+				<task_length>30000</task_length>
+				<required_core>1</required_core>
+			</task_type>
+			<task_type name="ZipPSA" count="1">
+				<data_upload>1000</data_upload>
+				<data_download>5000</data_download>
+				<task_length>30000</task_length>
+				<required_core>1</required_core>
+			</task_type>
+		</task_types>
+
+		<task_dependencies>
+			<!-- ExtractSGT -> SeismogramSynthesis -->
+			<dependency from="ExtractSGT" n1="1" to="SeismogramSynthesis" n2="1" weight="1000"/>
+			<dependency from="ExtractSGT" n1="1" to="SeismogramSynthesis" n2="2" weight="1000"/>
+			<dependency from="ExtractSGT" n1="1" to="SeismogramSynthesis" n2="3" weight="1000"/>
+			<dependency from="ExtractSGT" n1="1" to="SeismogramSynthesis" n2="4" weight="1000"/>
+			<dependency from="ExtractSGT" n1="2" to="SeismogramSynthesis" n2="5" weight="1000"/>
+			<dependency from="ExtractSGT" n1="2" to="SeismogramSynthesis" n2="6" weight="1000"/>
+			<dependency from="ExtractSGT" n1="2" to="SeismogramSynthesis" n2="7" weight="1000"/>
+			<dependency from="ExtractSGT" n1="2" to="SeismogramSynthesis" n2="8" weight="1000"/>
+
+			<!-- SeismogramSynthesis -> ZipSeis -->
+			<dependency from="SeismogramSynthesis" n1="1" to="ZipSeis" n2="1" weight="1000"/>
+			<dependency from="SeismogramSynthesis" n1="2" to="ZipSeis" n2="1" weight="1000"/>
+			<dependency from="SeismogramSynthesis" n1="3" to="ZipSeis" n2="1" weight="1000"/>
+			<dependency from="SeismogramSynthesis" n1="4" to="ZipSeis" n2="1" weight="1000"/>
+			<dependency from="SeismogramSynthesis" n1="5" to="ZipSeis" n2="1" weight="1000"/>
+			<dependency from="SeismogramSynthesis" n1="6" to="ZipSeis" n2="1" weight="1000"/>
+			<dependency from="SeismogramSynthesis" n1="7" to="ZipSeis" n2="1" weight="1000"/>
+			<dependency from="SeismogramSynthesis" n1="8" to="ZipSeis" n2="1" weight="1000"/>
+
+			<!-- ZipSeis & SeismogramSynthesis -> PeakValCalcOkaya -->
+			<dependency from="SeismogramSynthesis" n1="1" to="PeakValCalcOkaya" n2="1" weight="1000"/>
+			<dependency from="SeismogramSynthesis" n1="2" to="PeakValCalcOkaya" n2="2" weight="1000"/>
+			<dependency from="SeismogramSynthesis" n1="3" to="PeakValCalcOkaya" n2="3" weight="1000"/>
+			<dependency from="SeismogramSynthesis" n1="4" to="PeakValCalcOkaya" n2="4" weight="1000"/>
+			<dependency from="SeismogramSynthesis" n1="5" to="PeakValCalcOkaya" n2="5" weight="1000"/>
+			<dependency from="SeismogramSynthesis" n1="6" to="PeakValCalcOkaya" n2="6" weight="1000"/>
+			<dependency from="SeismogramSynthesis" n1="7" to="PeakValCalcOkaya" n2="7" weight="1000"/>
+			<dependency from="SeismogramSynthesis" n1="8" to="PeakValCalcOkaya" n2="8" weight="1000"/>
+
+			<!-- PeakValCalcOkaya -> ZipPSA -->
+			<dependency from="PeakValCalcOkaya" n1="1" to="ZipPSA" n2="1" weight="1000"/>
+			<dependency from="PeakValCalcOkaya" n1="2" to="ZipPSA" n2="1" weight="1000"/>
+			<dependency from="PeakValCalcOkaya" n1="3" to="ZipPSA" n2="1" weight="1000"/>
+			<dependency from="PeakValCalcOkaya" n1="4" to="ZipPSA" n2="1" weight="1000"/>
+			<dependency from="PeakValCalcOkaya" n1="5" to="ZipPSA" n2="1" weight="1000"/>
+			<dependency from="PeakValCalcOkaya" n1="6" to="ZipPSA" n2="1" weight="1000"/>
+			<dependency from="PeakValCalcOkaya" n1="7" to="ZipPSA" n2="1" weight="1000"/>
+			<dependency from="PeakValCalcOkaya" n1="8" to="ZipPSA" n2="1" weight="1000"/>
+		</task_dependencies>
+	</application>
+	<application name="EPIGENOMICS" num_task="20">
+		<usage_percentage>30</usage_percentage>
+		<prob_cloud_selection>20</prob_cloud_selection>
+		<poisson_interarrival>2</poisson_interarrival>
+		<delay_sensitivity>0</delay_sensitivity>
+		<vm_utilization_on_edge>10</vm_utilization_on_edge>
+		<vm_utilization_on_cloud>1</vm_utilization_on_cloud>
+		<vm_utilization_on_mobile>0</vm_utilization_on_mobile>
+		<deadline_factor>6</deadline_factor>
+		<active_period>30</active_period>
+		<idle_period>60</idle_period>
+		<task_types>
+			<task_type name="fastQSplit" count="1">
+				<data_upload>1000</data_upload>
+				<data_download>5000</data_download>
+				<task_length>30000</task_length>
+				<required_core>1</required_core>
+			</task_type>
+			<task_type name="filterContams" count="4">
+				<data_upload>1000</data_upload>
+				<data_download>5000</data_download>
+				<task_length>30000</task_length>
+				<required_core>1</required_core>
+			</task_type>
+			<task_type name="sol2sanger" count="4">
+				<data_upload>1000</data_upload>
+				<data_download>5000</data_download>
+				<task_length>30000</task_length>
+				<required_core>1</required_core>
+			</task_type>
+			<task_type name="fastq2bfq" count="4">
+				<data_upload>1000</data_upload>
+				<data_download>5000</data_download>
+				<task_length>30000</task_length>
+				<required_core>1</required_core>
+			</task_type>
+			<task_type name="map" count="4">
+				<data_upload>1000</data_upload>
+				<data_download>5000</data_download>
+				<task_length>30000</task_length>
+				<required_core>1</required_core>
+			</task_type>
+			<task_type name="mapMerge" count="1">
+				<data_upload>1000</data_upload>
+				<data_download>5000</data_download>
+				<task_length>30000</task_length>
+				<required_core>1</required_core>
+			</task_type>
+			<task_type name="mapIndex" count="1">
+				<data_upload>1000</data_upload>
+				<data_download>5000</data_download>
+				<task_length>30000</task_length>
+				<required_core>1</required_core>
+			</task_type>
+			<task_type name="pileup" count="1">
+				<data_upload>1000</data_upload>
+				<data_download>5000</data_download>
+				<task_length>30000</task_length>
+				<required_core>1</required_core>
+			</task_type>
+		</task_types>
+
+		<task_dependencies>
+		 	<dependency from="fastQSplit" n1="1" to="filterContams" n2="1" weight="1000"/>
+			<dependency from="fastQSplit" n1="1" to="filterContams" n2="2" weight="1000"/>
+			<dependency from="fastQSplit" n1="1" to="filterContams" n2="3" weight="1000"/>
+			<dependency from="fastQSplit" n1="1" to="filterContams" n2="4" weight="1000"/>
+			<dependency from="filterContams" n1="1" to="sol2sanger" n2="1" weight="1000"/>
+			<dependency from="filterContams" n1="2" to="sol2sanger" n2="2" weight="1000"/>
+			<dependency from="filterContams" n1="3" to="sol2sanger" n2="3" weight="1000"/>
+			<dependency from="filterContams" n1="4" to="sol2sanger" n2="4" weight="1000"/>
+			<dependency from="sol2sanger" n1="1" to="fastq2bfq" n2="1" weight="1000"/>
+			<dependency from="sol2sanger" n1="2" to="fastq2bfq" n2="2" weight="1000"/>
+			<dependency from="sol2sanger" n1="3" to="fastq2bfq" n2="3" weight="1000"/>
+			<dependency from="sol2sanger" n1="4" to="fastq2bfq" n2="4" weight="1000"/>
+			<dependency from="fastq2bfq" n1="1" to="map" n2="1" weight="1000"/>
+			<dependency from="fastq2bfq" n1="2" to="map" n2="2" weight="1000"/>
+			<dependency from="fastq2bfq" n1="3" to="map" n2="3" weight="1000"/>
+			<dependency from="fastq2bfq" n1="4" to="map" n2="4" weight="1000"/>
+			<dependency from="map" n1="1" to="mapMerge" n2="1" weight="1000"/>
+			<dependency from="map" n1="2" to="mapMerge" n2="1" weight="1000"/>
+			<dependency from="map" n1="3" to="mapMerge" n2="1" weight="1000"/>
+			<dependency from="map" n1="4" to="mapMerge" n2="1" weight="1000"/>
+			<dependency from="mapMerge" n1="1" to="mapIndex" n2="1" weight="1000"/>
+			<dependency from="mapIndex" n1="1" to="pileup" n2="1" weight="1000"/>
+		</task_dependencies>
+	</application>
 </applications>
