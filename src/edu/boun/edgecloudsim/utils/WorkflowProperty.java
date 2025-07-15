@@ -20,6 +20,7 @@ public class WorkflowProperty {
     private long uploadSize, downloadSize;
     Map<Integer, List<TaskAssignmentInfo>> personalMappings;
     Map<Integer, List<Boolean>> personalBooleanMappings;
+    private double PredictedMakespan;
 
 
 
@@ -113,5 +114,13 @@ public class WorkflowProperty {
 
     public void setPersonalBooleanMappings(Map<Integer, List<Boolean>> personalBooleanMappings) {
         this.personalBooleanMappings = personalBooleanMappings;
+    }
+
+    public double getPredictedMakespan() {
+        return PredictedMakespan;
+    }
+
+    public void setPredictedMakespan(double predictedMakespan) {
+        PredictedMakespan = predictedMakespan;
     }
 }

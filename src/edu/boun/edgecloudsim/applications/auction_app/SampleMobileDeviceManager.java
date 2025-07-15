@@ -516,6 +516,9 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		Map<Integer, List<Boolean>> booleanMap = buildBooleanMap(personalMappings);
 		workflowProperty.setPersonalMappings(personalMappings);
 		workflowProperty.setPersonalBooleanMappings(booleanMap);
+		// Set the predicted makespan for the workflow
+		double predictedMakespan = computePredictedMakespan(personalMappings);
+		workflowProperty.setPredictedMakespan(predictedMakespan);
 		// Add the workflow to the workflow list
 		workflowList.add(workflowProperty);
 	}
@@ -652,6 +655,23 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 			}
 		}
 		return lastFinishTime;
+	}
+
+	private double computePredictedMakespan(Map<Integer, List<TaskAssignmentInfo>> personalMappings) {
+		// Calcola il makespan come differenza tra il tempo di fine massimo e il tempo di inizio minimo
+		double minStart = Double.POSITIVE_INFINITY;
+		double maxFinish = 0.0;
+		for (List<TaskAssignmentInfo> assignments : personalMappings.values()) {
+		    for (TaskAssignmentInfo assignment : assignments) {
+		        if (assignment.getPredictedStartTime() < minStart) {
+		            minStart = assignment.getPredictedStartTime();
+		        }
+		        if (assignment.getPredictedFinishTime() > maxFinish) {
+		            maxFinish = assignment.getPredictedFinishTime();
+		        }
+		    }
+		}
+		return maxFinish - minStart;
 	}
 
 
