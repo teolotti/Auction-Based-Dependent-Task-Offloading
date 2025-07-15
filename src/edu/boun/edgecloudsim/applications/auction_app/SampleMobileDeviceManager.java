@@ -32,7 +32,6 @@ import edu.boun.edgecloudsim.core.SimSettings;
 import edu.boun.edgecloudsim.core.SimSettings.NETWORK_DELAY_TYPES;
 import edu.boun.edgecloudsim.edge_client.*;
 import edu.boun.edgecloudsim.edge_server.EdgeHost;
-import edu.boun.edgecloudsim.edge_server.EdgeServerManager;
 import edu.boun.edgecloudsim.edge_server.EdgeStatus;
 import edu.boun.edgecloudsim.edge_server.EdgeVM;
 import edu.boun.edgecloudsim.network.NetworkModel;
@@ -45,18 +44,14 @@ import org.cloudbus.cloudsim.UtilizationModelFull;
 import org.cloudbus.cloudsim.Vm;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.core.CloudSimTags;
-import org.cloudbus.cloudsim.core.SimEntity;
 import org.cloudbus.cloudsim.core.SimEvent;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 
-import edu.boun.edgecloudsim.applications.auction_app.Request;
-
 import java.math.BigInteger;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class SampleMobileDeviceManager extends MobileDeviceManager {
 	private static final int BASE = 100000; //start from base in order not to conflict cloudsim tag!
@@ -80,6 +75,8 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 	private boolean auctionRunning = false;
 
 	private int taskIdCounter=0;
+
+	private ArrayList<WorkflowProperty> workflowList = new ArrayList<>();
 	
 	public SampleMobileDeviceManager() throws Exception{
 	}
@@ -515,7 +512,12 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		// Compute the PCPs (Partial Critical Paths) for the workflow
 		computePCPs(workflowProperty);
 		// Next step is to create personal mapping for each task in the workflow
-		PersonalPCP(workflowProperty);
+		Map<Integer, List<TaskAssignmentInfo>> personalMappings = PersonalPCP(workflowProperty);
+		Map<Integer, List<Boolean>> booleanMap = buildBooleanMap(personalMappings);
+		workflowProperty.setPersonalMappings(personalMappings);
+		workflowProperty.setPersonalBooleanMappings(booleanMap);
+		// Add the workflow to the workflow list
+		workflowList.add(workflowProperty);
 	}
 
 	private void computePCPs(WorkflowProperty workflowProperty) {
@@ -537,7 +539,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		SearchPCP(0, extendedMatrix, taskPCPutils, workflowProperty);
 	}
 
-	private void PersonalPCP(WorkflowProperty workflowProperty) {
+	private Map<Integer, List<TaskAssignmentInfo>> PersonalPCP(WorkflowProperty workflowProperty) {
 		// This method should create personal mappings for each task in the workflow
 		// based on the PCPs computed earlier.
 		int numofEdgeHosts = SimSettings.getInstance().getNumOfEdgeHosts();
@@ -557,48 +559,56 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 
 		for (PCP pcp : workflowProperty.getPcpList()) {
 			int edgeDeviceId = 0;
-			double maxfinishTime = Double.POSITIVE_INFINITY;
+			double bestfinishTime = Double.POSITIVE_INFINITY;
 			List<TaskAssignmentInfo> bestAssignments = new ArrayList<>();
 			for (int i = 0; i < numofEdgeHosts; i++) {
-				List<TaskAssignmentInfo> assignments = simulateTaskAssignments(pcp, i, readyTimes, workflowProperty, personalMappings);
+				double currentReady = readyTimes[edgeDeviceId];
+				List<TaskAssignmentInfo> assignments = simulateTaskAssignments(pcp, i, currentReady, workflowProperty, personalMappings, statuses);
 				// Get the status of the edge device
 				// EdgeStatus status = statuses.get(i);
 				// Check if the edge device is available and has enough resources
 				// if (status.isAvailable() && status.hasEnoughResources()) {
 				// For simplicity, we assume all edge devices are available and have enough resources
 				double finishTime = getLastFinishTime(assignments); // This should be calculated based on the task properties
-				if (finishTime < maxfinishTime) {
-					maxfinishTime = finishTime;
+				if (finishTime < bestfinishTime) {
+					bestfinishTime = finishTime;
 					edgeDeviceId = i;
 					bestAssignments = assignments;
 				}
 			}
+			// Update the personal mappings with the best assignments
+			for (TaskAssignmentInfo assignment : bestAssignments) {
+				personalMappings.get(edgeDeviceId).set(assignment.getTaskIndex(), assignment);
+			}
+			// Update the ready time for the edge device
+			readyTimes[edgeDeviceId] = bestfinishTime;
 		}
+		return personalMappings;
 	}
 
-	private List<TaskAssignmentInfo> simulateTaskAssignments(PCP pcp, int edgeDeviceId, double[] readyTimes,
-															 WorkflowProperty workflowProperty, Map<Integer, List<TaskAssignmentInfo>> personalMappings) {
+	private List<TaskAssignmentInfo> simulateTaskAssignments(PCP pcp, int edgeDeviceId, double currentReadyTime,
+															 WorkflowProperty workflowProperty, Map<Integer, List<TaskAssignmentInfo>> personalMappings, ArrayList<EdgeStatus> statuses) {
 		List<TaskAssignmentInfo> assignments = new ArrayList<>();
 		// Simulate the task assignments for the given PCP and edge device
-		for(int i = 0; i < pcp.getTaskIndexes().size(); i++) {
-			int taskIndex = pcp.getTaskIndexes().get(i);
-			personalMappings.get(edgeDeviceId).set(taskIndex, new TaskAssignmentInfo(taskIndex, 0.0, 0.0, readyTimes[edgeDeviceId]));
+		for(int taskIndex : pcp.getTaskIndexes()) {
+			personalMappings.get(edgeDeviceId).set(taskIndex, new TaskAssignmentInfo(taskIndex, 0.0, 0.0, currentReadyTime));
 			ArrayList<Integer> predecessors = getPredecessors(workflowProperty.getDependencyMatrix(), taskIndex);
+			double dataReadyTime = 0.0;
 			if(predecessors.isEmpty()) {
-				//case of the first task to be executed
+				double transmissionTime = (double) workflowProperty.getUploadSize() / SimSettings.getInstance().getWlanBandwidth();
+				dataReadyTime = workflowProperty.getStartTime() + transmissionTime;
 			} else {
 				// calculate finish time plus transmission time for each predecessor
-				double finishTime = 0.0;
 				for (int predecessor : predecessors) {
 					for(int j = 0; j < personalMappings.size(); j++) {
 						TaskAssignmentInfo predecessorInfo = personalMappings.get(j).get(predecessor);
 						if (predecessorInfo != null) {
 							if (j == edgeDeviceId) {
 								// If the predecessor is on the same edge device, just use its finish time
-								finishTime = Math.max(finishTime, predecessorInfo.getPredictedFinishTime());
+								dataReadyTime = Math.max(dataReadyTime, predecessorInfo.getPredictedFinishTime()); //predicted finish time del pred è start time più computazione
 							} else {
 								// If the predecessor is on a different edge device, add transmission time
-								finishTime = Math.max(finishTime, predecessorInfo.getPredictedFinishTime()+
+								dataReadyTime = Math.max(dataReadyTime, predecessorInfo.getPredictedFinishTime()+
 									(double) workflowProperty.getDependencyMatrix()[predecessor][taskIndex] /
 											SimSettings.getInstance().getManBandwidth());
 							}
@@ -606,8 +616,31 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 					}
 				}
 			}
+			double predStartTime = Math.max(dataReadyTime, currentReadyTime);
+			double predFinishTime = predStartTime + (double) workflowProperty.getTaskList().get(taskIndex).getLength() /
+					statuses.get(edgeDeviceId).getMips();
+			// Update the ready time for the edge device
+			currentReadyTime = predFinishTime;
+			TaskAssignmentInfo assignmentInfo = new TaskAssignmentInfo(taskIndex, predStartTime, predFinishTime, currentReadyTime, true);
+			assignments.add(assignmentInfo);
 		}
 		return assignments;
+	}
+
+	private Map<Integer, List<Boolean>> buildBooleanMap(Map<Integer, List<TaskAssignmentInfo>> personalMappings) {
+		Map<Integer, List<Boolean>> booleanMap = new HashMap<>();
+		for (Map.Entry<Integer, List<TaskAssignmentInfo>> entry : personalMappings.entrySet()) {
+			List<TaskAssignmentInfo> assignments = entry.getValue();
+			for (TaskAssignmentInfo assignment : assignments) {
+				// Check if the task is assigned to an edge device
+				if (assignment.isAssigned()) {
+					booleanMap.get(entry.getKey()).set(assignment.getTaskIndex(), true);
+				} else {
+					booleanMap.get(entry.getKey()).set(assignment.getTaskIndex(), false);
+				}
+			}
+		}
+		return booleanMap;
 	}
 
 	private double getLastFinishTime(List<TaskAssignmentInfo> assignments) {
@@ -620,6 +653,8 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		}
 		return lastFinishTime;
 	}
+
+
 
 	private int[][] addDummyTasks(int[][] taskDependencies) {
 		int n = taskDependencies.length;
@@ -784,4 +819,11 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 	}
 
 
+    public ArrayList<WorkflowProperty> getWorkflowList() {
+        return workflowList;
+    }
+
+    public void setWorkflowList(ArrayList<WorkflowProperty> workflowList) {
+        this.workflowList = workflowList;
+    }
 }

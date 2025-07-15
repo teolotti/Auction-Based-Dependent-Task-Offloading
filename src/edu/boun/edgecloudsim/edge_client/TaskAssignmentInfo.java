@@ -15,6 +15,13 @@ public class TaskAssignmentInfo {
         this.predictedFinishTime = predictedFinishTime;
         this.EdgeAvailableTime = edgeAvailableTime;
     }
+    public TaskAssignmentInfo(int taskIndex, double predictedStartTime, double predictedFinishTime, double edgeAvailableTime, boolean isAssigned) {
+        this.taskIndex = taskIndex;
+        this.predictedStartTime = predictedStartTime;
+        this.predictedFinishTime = predictedFinishTime;
+        this.EdgeAvailableTime = edgeAvailableTime;
+        this.isAssigned = isAssigned;
+    }
     public int getTaskIndex() {
         return taskIndex;
     }

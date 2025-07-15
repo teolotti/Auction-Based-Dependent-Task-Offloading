@@ -1,8 +1,11 @@
 package edu.boun.edgecloudsim.utils;
 
 import edu.boun.edgecloudsim.edge_client.PCP;
+import edu.boun.edgecloudsim.edge_client.TaskAssignmentInfo;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 public class WorkflowProperty {
 
@@ -15,6 +18,9 @@ public class WorkflowProperty {
     private ArrayList<PCP> pcpList;
     private int mobileDeviceId;
     private long uploadSize, downloadSize;
+    Map<Integer, List<TaskAssignmentInfo>> personalMappings;
+    Map<Integer, List<Boolean>> personalBooleanMappings;
+
 
 
 
@@ -91,5 +97,21 @@ public class WorkflowProperty {
 
     public long getDownloadSize() {
         return downloadSize;
+    }
+
+    public Map<Integer, List<TaskAssignmentInfo>> getPersonalMappings() {
+        return personalMappings;
+    }
+
+    public void setPersonalMappings(Map<Integer, List<TaskAssignmentInfo>> personalMappings) {
+        this.personalMappings = personalMappings;
+    }
+
+    public Map<Integer, List<Boolean>> getPersonalBooleanMappings() {
+        return personalBooleanMappings;
+    }
+
+    public void setPersonalBooleanMappings(Map<Integer, List<Boolean>> personalBooleanMappings) {
+        this.personalBooleanMappings = personalBooleanMappings;
     }
 }
