@@ -326,7 +326,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 				AuctionResult winnerData = ((SampleEdgeOrchestrator)SimManager.getInstance().getEdgeOrchestrator()).auction(reqQueue);
 				Request winner = null;
 				for(Request request : reqQueue) {
-					if(winnerData.getWinnerId() == request.getId())
+					if(winnerData.getWinnerId() == request.getId()) //FIXME: check this if clause
 						winner = request;
 						reqQueue.remove(request);
 				}
