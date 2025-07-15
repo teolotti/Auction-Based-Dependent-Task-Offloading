@@ -861,8 +861,8 @@ public class SimSettings {
 		// [5] vm utilization on cloud (%)
 		// [6] vm utilization on mobile (%)
 		// [7] deadline factor
-		// [8] active period (sec)
-		// [9] idle period (sec)
+		// [8] avg data upload (KB)
+		// [9] avg data download (KB)
 		private double[] properties; // properties of the workflow, e.g., usage percentage, prob. cloud selection, poisson mean, etc.
 
 		public Workflow(String name, int numTasks) {
