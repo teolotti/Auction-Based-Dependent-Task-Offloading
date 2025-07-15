@@ -520,7 +520,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		double predictedMakespan = computePredictedMakespan(personalMappings);
 		workflowProperty.setPredictedMakespan(predictedMakespan);
 		// Add the workflow to the workflow list
-		workflowList.add(workflowProperty);
+		workflowList.set(workflowProperty.getMobileDeviceId(), workflowProperty);
 	}
 
 	private void computePCPs(WorkflowProperty workflowProperty) {
