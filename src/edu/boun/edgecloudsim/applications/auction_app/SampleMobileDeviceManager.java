@@ -45,6 +45,7 @@ import org.cloudbus.cloudsim.Vm;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.core.CloudSimTags;
 import org.cloudbus.cloudsim.core.SimEvent;
+import org.apache.commons.math3.distribution.UniformRealDistribution;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -291,25 +292,21 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 			}
 			case ENQUEUE_REQ:
 			{
-				TaskProperty task = (TaskProperty) ev.getData();
-				ArrayList<EdgeStatus> statuses = SimManager.getInstance().getEdgeServerManager().getEdgeDevicesStatus();
-				int preference = formPreferences(statuses);
-				if(preference < 0) {
-					SimLogger.printLine("preference calculation went wrong");
-					System.exit(1);
-				}
-				long taskLength = task.getLength();
-				double bid = decideBid(taskLength);
-				Task dummyTask = createTask(task);
+				WorkflowProperty workflow = (WorkflowProperty) ev.getData();
+				
+				Task dummyTask = new Task (workflow.getMobileDeviceId(), -1, 0, 1, workflow.getUploadSize(), workflow.getDownloadSize(), null, null, null);
+				
+				//need to handle two-hop situations
+				double uploadCost = networkModel.getUploadDelay(workflow.getMobileDeviceId(), SimSettings.GENERIC_EDGE_DEVICE_ID, dummyTask);
+				double downloadCost = networkModel.getDownloadDelay(SimSettings.GENERIC_EDGE_DEVICE_ID, workflow.getMobileDeviceId(), dummyTask);
 
-				double minStartTime = statuses.get(preference).getWaitingTime();
-				double maxFinishingTime = minStartTime + taskLength/statuses.get(preference).getMips();
-				double uploadCost = networkModel.getUploadDelay(task.getMobileDeviceId(), SimSettings.GENERIC_EDGE_DEVICE_ID, dummyTask);
-				double downloadCost = networkModel.getDownloadDelay(SimSettings.GENERIC_EDGE_DEVICE_ID, task.getMobileDeviceId(), dummyTask);
-
-				double processingEstimated = estimateProcessingTime(maxFinishingTime, minStartTime, uploadCost, downloadCost);
-
-				Request request = new Request(task.getMobileDeviceId(), bid, processingEstimated, task, preference);
+				double processingEstimated = workflow.getPredictedMakespan() + uploadCost + downloadCost;
+				
+				double maxUnitCost = SimManager.getInstance().getEdgeServerManager().getMaxCost();
+				double minMips = SimManager.getInstance().getEdgeServerManager().getMinMips();
+				double bid = decideBid(workflow.getTotalWorkload(), maxUnitCost, minMips);
+				
+				Request request = new Request(workflow.getMobileDeviceId(), bid, processingEstimated, workflow);
 
 				reqQueue.add(request);
 				if(!auctionRunning)
@@ -356,30 +353,16 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		}
 	}
 
-	public double estimateProcessingTime(double maxFinishingTime, double minStartTime, double uploadCost, double downloadCost) {
-		return maxFinishingTime - minStartTime + uploadCost + downloadCost;
-	}
-
-	public int formPreferences(ArrayList<EdgeStatus> statuses) {//choose most mips for available percentage
-		int preference = -1;
-		double max = -0.1;
-		for(int i = 0; i < statuses.size(); i++) {
-			if (statuses.get(i).getUtilization() * statuses.get(i).getMips() > max) { //calculate most MIPS slice available
-				max = statuses.get(i).getUtilization() * statuses.get(i).getMips();
-				preference = i;
-			}
-		}
-		return preference;
-	}
-
-	public double decideBid(long taskLength) { //maybe needs fine-tuning in the edge cost, and generalization
-		double bid = (0.08 * taskLength)/5000;
+	public double decideBid(long workflowLength, double maxCost, double minMips) {
+		double estimatedCost = (maxCost * workflowLength) / minMips;
+		UniformRealDistribution distro = new UniformRealDistribution(estimatedCost, 5 * estimatedCost);
+		double bid = distro.sample();
 		return bid;
 	}
 
 	@Override
-	public void setupMobileDeviceArrival(TaskProperty edgeTask) {//subscribes to the net, delay value is to be reasoned upon
-		schedule(getId(), 0.001, ENQUEUE_REQ, edgeTask);
+	public void setupMobileDeviceArrival(WorkflowProperty edgeWorkflow) {//subscribes to the net, delay value is to be reasoned upon
+		schedule(getId(), 0.001, ENQUEUE_REQ, edgeWorkflow);
 	}
 
 	public void submitTask(TaskProperty edgeTask, int preference) {

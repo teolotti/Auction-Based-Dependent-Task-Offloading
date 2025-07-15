@@ -71,4 +71,8 @@ public abstract class EdgeServerManager {
 	public abstract double getAvgUtilization();
 	
 	public abstract ArrayList<EdgeStatus> getEdgeDevicesStatus();
+
+	public abstract double getMinMips();
+
+	public abstract double getMaxCost();
 }

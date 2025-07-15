@@ -24,11 +24,12 @@ public class WorkflowProperty {
     private double PredictedMakespan;
     private ArrayList<Integer> initialTaskIds;
     private ArrayList<Integer> finalTaskIds;
+    private long totalWorkload;
 
 
 
 
-    public WorkflowProperty(String name, ArrayList<TaskProperty> taskList, int workflowType, double startTime, int[][] dependencyMatrix, double deadline, int mobileDeviceId, long uploadSize, long downloadSize) {
+    	public WorkflowProperty(String name, ArrayList<TaskProperty> taskList, int workflowType, double startTime, int[][] dependencyMatrix, double deadline, int mobileDeviceId, long uploadSize, long downloadSize, long totalWorkload) {
         this.name = name;
         this.taskList = taskList;
         this.workflowType = workflowType;
@@ -39,6 +40,7 @@ public class WorkflowProperty {
         this.uploadSize = uploadSize;
         this.downloadSize = downloadSize;
         computeInitialAndFinalTaskIds();
+        this.totalWorkload = totalWorkload; 
     }
 
     public double getStartTime() {
@@ -150,4 +152,12 @@ public class WorkflowProperty {
             }
         }
     }
+	
+	public long getTotalWorkload() {
+		return totalWorkload;
+	}
+
+	public void setTotalWorkload(long totalWorkload) {
+		this.totalWorkload = totalWorkload;
+	}
 }

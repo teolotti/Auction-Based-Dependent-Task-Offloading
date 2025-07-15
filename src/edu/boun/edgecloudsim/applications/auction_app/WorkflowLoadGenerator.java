@@ -83,7 +83,7 @@ public class WorkflowLoadGenerator extends LoadGeneratorModel {
             double basicMakespan = totalLength / SimSettings.getInstance().getMipsForEdgeVM();
             double deadline = virtualTime + basicMakespan * deadline_factor;
 
-
+            long totalWorkload = 0;
             ArrayList<TaskProperty> taskList = new ArrayList<>();
             for (int k = 0; k < SimSettings.getInstance().getWorkflows()[randomWorkflowType].getTasks().length; k++) {
                 // Create tasks for the workflow
@@ -98,6 +98,7 @@ public class WorkflowLoadGenerator extends LoadGeneratorModel {
                         k
                 );
                 taskList.add(taskProperty);
+                totalWorkload += taskProperty.getLength();
             }
             workflowList.add(new WorkflowProperty(
                     SimSettings.getInstance().getWorkflows()[randomWorkflowType].getName(),
@@ -108,7 +109,8 @@ public class WorkflowLoadGenerator extends LoadGeneratorModel {
                     deadline,
                     i,
                     (long)dataUploadSize,
-                    (long)dataDownloadSize
+                    (long)dataDownloadSize,
+                    totalWorkload
             ));
         }
     }

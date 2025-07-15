@@ -35,7 +35,8 @@ import edu.boun.edgecloudsim.utils.Location;
 
 public class StatEdgeServerManager extends EdgeServerManager{
 	private int hostIdCounter;
-
+	private List<Double> unitCosts;
+	
 	public StatEdgeServerManager() {
 		hostIdCounter = 0;
 	}
@@ -151,7 +152,7 @@ public class StatEdgeServerManager extends EdgeServerManager{
 				        remainingMI += c.getCloudletLength();
 				    
 				    double waitingTime = remainingMI / mips;
-				    EdgeStatus status = new EdgeStatus(utilization, mips, waitingTime);
+				    EdgeStatus status = new EdgeStatus(utilization, mips, waitingTime, unitCosts.get(i));
 					stats.add(status);
 				}
 			}
@@ -159,6 +160,38 @@ public class StatEdgeServerManager extends EdgeServerManager{
 		return stats;
 	}
 	
+	public double getMaxCost() {
+		double maxCost = -1;
+		for(int i = 0; i < unitCosts.size(); i++) {
+			if(unitCosts.get(i) > maxCost)
+				maxCost = unitCosts.get(i);
+		}
+		return maxCost;
+	}
+	
+	public double getMinMips() {
+		double minMips = Double.POSITIVE_INFINITY;
+		
+		for(int i= 0; i<localDatacenters.size(); i++) {
+			List<? extends Host> list = localDatacenters.get(i).getHostList();
+			// for each host...
+			for (int j=0; j < list.size(); j++) {
+				
+				Host host = list.get(j);
+				List<EdgeVM> vmArray = SimManager.getInstance().getEdgeServerManager().getVmList(host.getId());
+				//for each vm...
+				for(int vmIndex=0; vmIndex<vmArray.size(); vmIndex++){
+					EdgeVM vm = vmArray.get(vmIndex);
+					
+					double mips = vm.getMips();
+
+				    if(mips < minMips)
+				    	minMips = mips;
+				}
+			}
+		}
+		return minMips;
+	}
 
 	private Datacenter createDatacenter(int index, Element datacenterElement) throws Exception{
 		String arch = datacenterElement.getAttribute("arch");
@@ -181,6 +214,7 @@ public class StatEdgeServerManager extends EdgeServerManager{
 		//    and its price (G$/Pe time unit).
 		DatacenterCharacteristics characteristics = new DatacenterCharacteristics(
                 arch, os, vmm, hostList, time_zone, costPerSec, costPerMem, costPerStorage, costPerBw);
+		unitCosts.add(costPerSec);//we need this to keep costs (no idea how to access them easily otherwise)
 
 
 		// 6. Finally, we need to create a PowerDatacenter object.

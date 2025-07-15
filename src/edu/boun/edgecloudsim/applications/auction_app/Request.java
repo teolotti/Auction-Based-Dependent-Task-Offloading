@@ -1,20 +1,18 @@
 package edu.boun.edgecloudsim.applications.auction_app;
 
-import edu.boun.edgecloudsim.utils.TaskProperty;
+import edu.boun.edgecloudsim.utils.WorkflowProperty;
 
 public class Request {
 	int id;
 	double bid;
 	double processingEstimated;
-	TaskProperty task;
-	int preference;
+	WorkflowProperty workflow;
 	
-	public Request(int id, double bid, double processingEstimated, 	TaskProperty task, int preference) {
+	public Request(int id, double bid, double processingEstimated, 	WorkflowProperty workflow) {
 		this.id = id;
 		this.bid = bid;
 		this.processingEstimated = processingEstimated;
-		this.task = task;
-		this.preference = preference;
+		this.workflow = workflow;
 	}
 	
 	public int getId() {
@@ -41,19 +39,11 @@ public class Request {
 		this.processingEstimated = processingEstimated;
 	}
 
-	public TaskProperty getTask() {
-		return task;
+	public WorkflowProperty getTask() {
+		return workflow;
 	}
 
-	public void setTask(TaskProperty task) {
-		this.task = task;
+	public void setTask(WorkflowProperty workflow) {
+		this.workflow = workflow;
 	}
-
-	public int getPreference() {
-		return preference;
-	}
-
-	public void setPreference(int preference) {
-		this.preference = preference;
-	}	
 }

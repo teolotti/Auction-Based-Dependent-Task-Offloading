@@ -4,14 +4,16 @@ public class EdgeStatus {
 	double utilization;
 	double mips;
 	double waitingTime;
+	double unitCost;
 	
 	
 	
-	public EdgeStatus(double utilization, double mips, double waitingTime) {
+	public EdgeStatus(double utilization, double mips, double waitingTime, double unitCost) {
 		super();
 		this.utilization = utilization;
 		this.mips = mips;
 		this.waitingTime = waitingTime;
+		this.unitCost = unitCost;
 	}
 	public double getUtilization() {
 		return utilization;
@@ -32,4 +34,10 @@ public class EdgeStatus {
 		this.waitingTime = waitingTime;
 	}
 	
+	public double getUnitCost() {
+		return unitCost;
+	}
+	public void setUnitCost(double unitCost) {
+		this.unitCost = unitCost;
+	}	
 }
