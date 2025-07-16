@@ -160,4 +160,13 @@ public class WorkflowProperty {
 	public void setTotalWorkload(long totalWorkload) {
 		this.totalWorkload = totalWorkload;
 	}
+	
+	public int getPreferredDatacenterForTask(int appId) {
+		int preferredIndex = -1;
+		for(Map.Entry<Integer, List<Boolean>> entry : personalBooleanMappings.entrySet()) {
+			if (entry.getValue().get(appId))
+				return entry.getKey();
+		}
+		return preferredIndex;
+	}
 }

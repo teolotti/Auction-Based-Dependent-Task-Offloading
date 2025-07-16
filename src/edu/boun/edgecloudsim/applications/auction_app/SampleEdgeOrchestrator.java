@@ -122,10 +122,7 @@ public class SampleEdgeOrchestrator extends EdgeOrchestrator {
 	        r2.getBid() / r2.getProcessingEstimated(),
 	        r1.getBid() / r1.getProcessingEstimated()));
 		int winnerId = a[0].getId();
-		double payment = a[0].getBid();
-		if(requests.size() > 1) {
-			payment = (a[1].getBid()/a[1].getProcessingEstimated()) * a[0].getProcessingEstimated();
-		}
+		double payment = requests.size() > 1 ? a[0].getBid() : (a[1].getBid()/a[1].getProcessingEstimated()) * a[0].getProcessingEstimated();
 		
 		return new AuctionResult(winnerId, payment);
 	}

@@ -39,7 +39,7 @@ public class Request {
 		this.processingEstimated = processingEstimated;
 	}
 
-	public WorkflowProperty getTask() {
+	public WorkflowProperty getWorkflow() {
 		return workflow;
 	}
 

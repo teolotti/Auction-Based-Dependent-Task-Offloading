@@ -19,12 +19,11 @@ import org.cloudbus.cloudsim.core.SimEvent;
 import java.util.List;
 
 public class AuctionSimManager extends SimManager {
-    private static final int CREATE_TASK = 0;
+	private static final int CREATE_WORKFLOW = 0; // Define a tag for the event
     private static final int CHECK_ALL_VM = 1;
     private static final int GET_LOAD_LOG = 2;
     private static final int PRINT_PROGRESS = 3;
     private static final int STOP_SIMULATION = 4;
-    private static final int CREATE_WORKFLOW = 5; // Define a tag for the event
 
     private String simScenario;
     private String orchestratorPolicy;

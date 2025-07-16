@@ -78,6 +78,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 	private int taskIdCounter=0;
 
 	private ArrayList<WorkflowProperty> workflowList = new ArrayList<>();
+	private ArrayList<AppDependencies> taskTrackerList = new ArrayList<>();
 	
 	public SampleMobileDeviceManager() throws Exception{
 	}
@@ -154,6 +155,9 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 					getEdgeServerManager().
 					getDatacenterList().get(task.getAssociatedHostId()).
 					getHostList().get(0));
+			//if last task, pop it from the index list for this workflow, else unlock dependencies
+		
+			//if no last task left, conclude and send to the mobile device
 			
 			//if neighbor edge device is selected
 			if(host.getLocation().getServingWlanId() != task.getSubmittedLocation().getServingWlanId())
@@ -301,6 +305,8 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 				double downloadCost = networkModel.getDownloadDelay(SimSettings.GENERIC_EDGE_DEVICE_ID, workflow.getMobileDeviceId(), dummyTask);
 
 				double processingEstimated = workflow.getPredictedMakespan() + uploadCost + downloadCost;
+				if(CloudSim.clock() + processingEstimated > workflow.getDeadline())//handle failure of workflow here
+					break;
 				
 				double maxUnitCost = SimManager.getInstance().getEdgeServerManager().getMaxCost();
 				double minMips = SimManager.getInstance().getEdgeServerManager().getMinMips();
@@ -322,14 +328,16 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 				auctionRunning = true;
 				AuctionResult winnerData = ((SampleEdgeOrchestrator)SimManager.getInstance().getEdgeOrchestrator()).auction(reqQueue);
 				Request winner = null;
+				double auctionTime = (double) reqQueue.size() * Math.log((double) reqQueue.size()) * 0.0001;
 				for(Request request : reqQueue) {
 					if(winnerData.getWinnerId() == request.getId()) //FIXME: check this if clause
 						winner = request;
 						reqQueue.remove(request);
 				}
 				//Payment needs to be saved (data file with all the stats seems best solution here)
+				
 				if(winner != null)
-					schedule(getId(), 0.001, AUCTION_RESULT, winner); // note:these and the next conditional schedules must be the same (auction thinking time)
+					schedule(getId(), auctionTime, AUCTION_RESULT, winner);
 				else
 					SimLogger.printLine("Winner not found");
 				break;
@@ -342,8 +350,11 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 				}
 				auctionRunning = false;
 				Request winner = (Request) ev.getData();
-				TaskProperty task = winner.getTask();
-				submitTask(task, winner.getPreference());
+				WorkflowProperty workflow = winner.getWorkflow();
+				AppDependencies dependencyTracker = new AppDependencies();
+				dependencyTracker.addWorkflowDependencies(workflow);
+				
+				//submit the first tasks using an indexed list
 				break;
 			}
 			default:
@@ -365,7 +376,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		schedule(getId(), 0.001, ENQUEUE_REQ, edgeWorkflow);
 	}
 
-	public void submitTask(TaskProperty edgeTask, int preference) {
+	public void submitTask(TaskProperty edgeTask, int preference, int taskAppId) {
 		int vmType=0;
 		int nextEvent=0;
 		int nextDeviceForNetworkModel;
@@ -375,7 +386,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		NetworkModel networkModel = SimManager.getInstance().getNetworkModel();
 		
 		//create a task
-		Task task = createTask(edgeTask);
+		Task task = createTask(edgeTask, taskAppId);
 		
 		Location currentLocation = SimManager.getInstance().getMobilityModel().
 				getLocation(task.getMobileDeviceId(), CloudSim.clock());
@@ -464,7 +475,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 				vmType.ordinal());
 	}
 	
-	private Task createTask(TaskProperty edgeTask){
+	private Task createTask(TaskProperty edgeTask, int taskAppId){
 		UtilizationModel utilizationModel = new UtilizationModelFull(); /*UtilizationModelStochastic*/
 		UtilizationModel utilizationModelCPU = getCpuUtilizationModel();
 
@@ -476,6 +487,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		//set the owner of this task
 		task.setUserId(this.getId());
 		task.setTaskType(edgeTask.getTaskType());
+		task.setTaskAppId(taskAppId);
 		
 		if (utilizationModelCPU instanceof CpuUtilizationModel_Custom) {
 			((CpuUtilizationModel_Custom)utilizationModelCPU).setTask(task);
@@ -483,6 +495,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		
 		return task;
 	}
+	
 
 	//=============================================
 	//Additional methods for auction application
@@ -534,7 +547,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		Map<Integer, List<TaskAssignmentInfo>> personalMappings = new HashMap<>();
 		for (int i = 0; i < numofEdgeHosts; i++) {
 			personalMappings.put(i, new ArrayList<>());
-			for (int j = 0; j < workflowProperty.getTaskList().size(); j++) {
+			for (int j = 0; j < workflowProperty.getTaskList().size(); j++) {//this ensures every list is as large as it can be
 				personalMappings.get(i).add(new TaskAssignmentInfo(j, 0.0, 0.0, 0.0));
 			}
 		}

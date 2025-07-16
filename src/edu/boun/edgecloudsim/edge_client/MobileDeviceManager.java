@@ -30,7 +30,7 @@ public abstract class MobileDeviceManager  extends DatacenterBroker {
 		// Default implementation does nothing
 		// This can be overridden in subclasses if needed
 	}
-	public abstract void submitTask(TaskProperty edgeTask, int preference);
+	public abstract void submitTask(TaskProperty edgeTask, int preference, int taskAppId);
 
 	public abstract void setupMobileDeviceArrival(WorkflowProperty edgeWorkflow);
 }

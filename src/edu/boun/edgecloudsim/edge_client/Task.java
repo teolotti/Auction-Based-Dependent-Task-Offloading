@@ -26,6 +26,8 @@ public class Task extends Cloudlet {
 	private int vmIndex;
 	private int datacenterId;
 	private boolean last = false; //keeps track of the end of an application's DAG
+	private int AppId;
+	private int taskAppId;
 
 	public Task(int _mobileDeviceId, int cloudletId, long cloudletLength, int pesNumber,
 			long cloudletFileSize, long cloudletOutputSize,
@@ -95,5 +97,21 @@ public class Task extends Cloudlet {
 	
 	public void setLast(boolean last) {
 		this.last = last;
+	}
+
+	public int getTaskAppId() {
+		return taskAppId;
+	}
+
+	public void setTaskAppId(int taskAppId) {
+		this.taskAppId = taskAppId;
+	}
+
+	public int getAppId() {
+		return AppId;
+	}
+
+	public void setAppId(int appId) {
+		AppId = appId;
 	}
 }

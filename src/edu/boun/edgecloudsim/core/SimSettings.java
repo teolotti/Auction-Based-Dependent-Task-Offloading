@@ -869,6 +869,10 @@ public class SimSettings {
 			this.name = name;
 			this.tasks = new TaskNode[numTasks];
 			this.dependencies = new int[numTasks][numTasks];
+			for(int i = 0; i < numTasks; i++)
+				for(int j = 0; j < numTasks; j++)
+					dependencies[i][j] = 0;
+			
 		}
 
 		public void addTask(TaskNode task, int index) {
