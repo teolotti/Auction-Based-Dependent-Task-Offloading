@@ -40,4 +40,13 @@ public class AppDependencies {
 		}
 		return unlockedTasks;
 	}
+	
+	public ArrayList<Integer> getUnlockableTasks(int appTaskId){
+		ArrayList<Integer> unlockableTasks = new ArrayList<Integer>();
+		for(int i = 0; i < dependencies.size(); i++) {
+			if(dependencies.get(i).contains(appTaskId));
+				unlockableTasks.add(i);
+		}
+		return null;
+	}
 }

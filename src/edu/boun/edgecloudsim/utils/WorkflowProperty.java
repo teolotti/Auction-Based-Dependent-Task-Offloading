@@ -169,4 +169,12 @@ public class WorkflowProperty {
 		}
 		return preferredIndex;
 	}
+	
+	public boolean removeFinalTaskIndex(int index) {
+		if(finalTaskIds.contains(index)) {
+			finalTaskIds.remove(finalTaskIds.indexOf(index));
+			return true;
+		}
+		return false;
+	}
 }
