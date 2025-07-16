@@ -1,5 +1,6 @@
 package edu.boun.edgecloudsim.utils;
 
+import edu.boun.edgecloudsim.applications.auction_app.SampleMobileDeviceManager;
 import edu.boun.edgecloudsim.edge_client.PCP;
 import edu.boun.edgecloudsim.edge_client.TaskAssignmentInfo;
 
@@ -21,6 +22,8 @@ public class WorkflowProperty {
     Map<Integer, List<TaskAssignmentInfo>> personalMappings;
     Map<Integer, List<Boolean>> personalBooleanMappings;
     private double PredictedMakespan;
+    private ArrayList<Integer> initialTaskIds;
+    private ArrayList<Integer> finalTaskIds;
 
 
 
@@ -35,6 +38,7 @@ public class WorkflowProperty {
         this.mobileDeviceId = mobileDeviceId;
         this.uploadSize = uploadSize;
         this.downloadSize = downloadSize;
+        computeInitialAndFinalTaskIds();
     }
 
     public double getStartTime() {
@@ -122,5 +126,28 @@ public class WorkflowProperty {
 
     public void setPredictedMakespan(double predictedMakespan) {
         PredictedMakespan = predictedMakespan;
+    }
+
+    public ArrayList<Integer> getInitialTaskIds() {
+        return initialTaskIds;
+    }
+
+    public ArrayList<Integer> getFinalTaskIds() {
+        return finalTaskIds;
+    }
+
+
+    private void computeInitialAndFinalTaskIds() {
+        initialTaskIds = new ArrayList<>();
+        finalTaskIds = new ArrayList<>();
+
+        for (int i = 0; i < taskList.size(); i++) {
+            if (SampleMobileDeviceManager.getPredecessors(dependencyMatrix, i).isEmpty()) {
+                initialTaskIds.add(i);
+            }
+            if (SampleMobileDeviceManager.getSuccessors(dependencyMatrix, i).isEmpty()) {
+                finalTaskIds.add(i);
+            }
+        }
     }
 }

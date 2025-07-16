@@ -21,7 +21,6 @@ public class TaskProperty {
 	private int pesNumber;
 	private int mobileDeviceId;
 	private int TaskAppId;
-	private int AppId;
 
 	public TaskProperty(double _startTime, int _mobileDeviceId, int _taskType, int _pesNumber, long _length, long _inputFileSize, long _outputFileSize) {
 		startTime=_startTime;
@@ -31,6 +30,16 @@ public class TaskProperty {
 		length = _length;
 		outputFileSize = _inputFileSize;
 		inputFileSize = _outputFileSize;
+	}
+	public TaskProperty(double _startTime, int _mobileDeviceId, int _taskType, int _pesNumber, long _length, long _inputFileSize, long _outputFileSize, int _taskAppId) {
+		startTime=_startTime;
+		mobileDeviceId=_mobileDeviceId;
+		taskType=_taskType;
+		pesNumber = _pesNumber;
+		length = _length;
+		outputFileSize = _inputFileSize;
+		inputFileSize = _outputFileSize;
+		TaskAppId = _taskAppId;
 	}
 
 	public TaskProperty(int _mobileDeviceId, int _taskType, double _startTime, ExponentialDistribution[][] expRngList) {
@@ -81,5 +90,9 @@ public class TaskProperty {
 
 	public int getMobileDeviceId(){
 		return mobileDeviceId;
+	}
+
+	public int getTaskAppId() {
+		return TaskAppId;
 	}
 }

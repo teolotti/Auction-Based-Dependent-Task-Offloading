@@ -741,7 +741,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		return priority;
 	}
 
-	public ArrayList<Integer> getSuccessors(int[][] dependencyMatrix, int taskIndex) {
+	public static ArrayList<Integer> getSuccessors(int[][] dependencyMatrix, int taskIndex) {
 		ArrayList<Integer> successors = new ArrayList<>();
 		for (int j = 0; j < dependencyMatrix[taskIndex].length; j++) {
 			if (dependencyMatrix[taskIndex][j] > 0) {
@@ -751,7 +751,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		return successors;
 	}
 
-	public ArrayList<Integer> getPredecessors(int[][] dependencyMatrix, int taskIndex) {
+	public static ArrayList<Integer> getPredecessors(int[][] dependencyMatrix, int taskIndex) {
 		ArrayList<Integer> predecessors = new ArrayList<>();
 		for (int i = 0; i < dependencyMatrix.length; i++) {
 			if (dependencyMatrix[i][taskIndex] > 0) {

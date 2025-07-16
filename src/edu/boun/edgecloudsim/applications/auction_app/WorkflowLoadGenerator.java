@@ -94,7 +94,8 @@ public class WorkflowLoadGenerator extends LoadGeneratorModel {
                         1, // Assuming 1 PEs for simplicity, can be adjusted
                         (long) expRngList[randomWorkflowType].get(k)[0].sample(), // Length
                         (long) expRngList[randomWorkflowType].get(k)[1].sample(), // Input file size
-                        (long) expRngList[randomWorkflowType].get(k)[2].sample()  // Output file size
+                        (long) expRngList[randomWorkflowType].get(k)[2].sample(),  // Output file size
+                        k
                 );
                 taskList.add(taskProperty);
             }
