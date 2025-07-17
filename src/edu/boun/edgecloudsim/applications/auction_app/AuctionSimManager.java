@@ -41,6 +41,18 @@ public class AuctionSimManager extends SimManager {
 
     public AuctionSimManager(ScenarioFactory _scenarioFactory, int _numOfMobileDevice, String _simScenario, String _orchestratorPolicy) throws Exception {
         super(_scenarioFactory, _numOfMobileDevice, _simScenario, _orchestratorPolicy);
+        simScenario = _simScenario;
+        scenarioFactory = _scenarioFactory;
+        numOfMobileDevice = _numOfMobileDevice;
+        orchestratorPolicy = _orchestratorPolicy;
+        networkModel = super.getNetworkModel();
+        mobilityModel = super.getMobilityModel();
+        edgeOrchestrator = super.getEdgeOrchestrator();
+        edgeServerManager = super.getEdgeServerManager();
+        cloudServerManager = super.getCloudServerManager();
+        mobileServerManager = super.getMobileServerManager();
+        mobileDeviceManager = super.getMobileDeviceManager();
+        loadGeneratorModel = super.getLoadGeneratorModel();
     }
 
     @Override
@@ -55,9 +67,9 @@ public class AuctionSimManager extends SimManager {
             }
         }
 
-        for(int i = 0; i< SimSettings.getInstance().getNumOfCloudHost(); i++) {
-            mobileDeviceManager.submitVmList(cloudServerManager.getVmList(i));
-        }
+//        for(int i = 0; i< SimSettings.getInstance().getNumOfCloudHost(); i++) {
+//            mobileDeviceManager.submitVmList(cloudServerManager.getVmList(i));
+//        }
 
         for(int i=0; i<numOfMobileDevice; i++){
             if(mobileServerManager.getVmList(i) != null)

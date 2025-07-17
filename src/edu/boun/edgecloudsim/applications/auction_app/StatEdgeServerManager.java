@@ -39,6 +39,7 @@ public class StatEdgeServerManager extends EdgeServerManager{
 	
 	public StatEdgeServerManager() {
 		hostIdCounter = 0;
+		unitCosts = new ArrayList<Double>();
 	}
 
 	@Override

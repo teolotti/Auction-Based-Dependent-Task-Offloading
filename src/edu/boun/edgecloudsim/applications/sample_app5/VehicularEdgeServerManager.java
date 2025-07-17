@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
+import edu.boun.edgecloudsim.edge_server.*;
 import org.cloudbus.cloudsim.CloudletSchedulerTimeShared;
 import org.cloudbus.cloudsim.Datacenter;
 import org.cloudbus.cloudsim.DatacenterCharacteristics;
@@ -34,10 +35,6 @@ import org.w3c.dom.NodeList;
 
 import edu.boun.edgecloudsim.core.SimManager;
 import edu.boun.edgecloudsim.core.SimSettings;
-import edu.boun.edgecloudsim.edge_server.EdgeHost;
-import edu.boun.edgecloudsim.edge_server.EdgeServerManager;
-import edu.boun.edgecloudsim.edge_server.EdgeVM;
-import edu.boun.edgecloudsim.edge_server.EdgeVmAllocationPolicy_Custom;
 import edu.boun.edgecloudsim.utils.Location;
 
 public class VehicularEdgeServerManager extends EdgeServerManager{
@@ -134,6 +131,21 @@ public class VehicularEdgeServerManager extends EdgeServerManager{
 			}
 		}
 		return totalUtilization / (double)vmCounter;
+	}
+
+	@Override
+	public ArrayList<EdgeStatus> getEdgeDevicesStatus() {
+		return null;
+	}
+
+	@Override
+	public double getMinMips() {
+		return 0;
+	}
+
+	@Override
+	public double getMaxCost() {
+		return 0;
 	}
 
 	private Datacenter createDatacenter(int index, Element datacenterElement) throws Exception{

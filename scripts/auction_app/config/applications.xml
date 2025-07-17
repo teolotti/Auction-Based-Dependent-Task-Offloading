@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <applications>
 	<application name="MONTAGE" num_task="25">
-		<usage_percentage>30</usage_percentage>
+		<usage_percentage>40</usage_percentage>
 		<prob_cloud_selection>20</prob_cloud_selection>
 		<poisson_interarrival>2</poisson_interarrival>
 		<delay_sensitivity>0</delay_sensitivity>
@@ -91,10 +91,10 @@
 			<dependency from="mBgModel" n1="1" to="mBackground" n2="2" weight="1000"/>
 			<dependency from="mBgModel" n1="1" to="mBackground" n2="3" weight="1000"/>
 			<dependency from="mBgModel" n1="1" to="mBackground" n2="4" weight="1000"/>
-			<dependency from="mProjectP" n1="1" to="mBackground" n2="1" weight="1000"/>
-			<dependency from="mProjectP" n1="2" to="mBackground" n2="2" weight="1000"/>
-			<dependency from="mProjectP" n1="3" to="mBackground" n2="3" weight="1000"/>
-			<dependency from="mProjectP" n1="4" to="mBackground" n2="4" weight="1000"/>
+			<dependency from="mProjectPP" n1="1" to="mBackground" n2="1" weight="1000"/>
+			<dependency from="mProjectPP" n1="2" to="mBackground" n2="2" weight="1000"/>
+			<dependency from="mProjectPP" n1="3" to="mBackground" n2="3" weight="1000"/>
+			<dependency from="mProjectPP" n1="4" to="mBackground" n2="4" weight="1000"/>
 			<dependency from="mBackground" n1="1" to="mImgTbl" n2="1" weight="1000"/>
 			<dependency from="mBackground" n1="2" to="mImgTbl" n2="1" weight="1000"/>
 			<dependency from="mBackground" n1="3" to="mImgTbl" n2="2" weight="1000"/>

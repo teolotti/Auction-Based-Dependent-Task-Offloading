@@ -131,6 +131,21 @@ public class DefaultEdgeServerManager extends EdgeServerManager{
 		return totalUtilization / vmCounter;
 	}
 
+	@Override
+	public ArrayList<EdgeStatus> getEdgeDevicesStatus() {
+		return null;
+	}
+
+	@Override
+	public double getMinMips() {
+		return 0;
+	}
+
+	@Override
+	public double getMaxCost() {
+		return 0;
+	}
+
 	private Datacenter createDatacenter(int index, Element datacenterElement) throws Exception{
 		String arch = datacenterElement.getAttribute("arch");
 		String os = datacenterElement.getAttribute("os");

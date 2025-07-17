@@ -21,6 +21,7 @@
 
 package edu.boun.edgecloudsim.applications.sample_app3;
 
+import edu.boun.edgecloudsim.utils.WorkflowProperty;
 import org.cloudbus.cloudsim.UtilizationModel;
 import org.cloudbus.cloudsim.UtilizationModelFull;
 import org.cloudbus.cloudsim.Vm;
@@ -60,7 +61,17 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 	public UtilizationModel getCpuUtilizationModel() {
 		return new CpuUtilizationModel_Custom();
 	}
-	
+
+	@Override
+	public void submitTask(TaskProperty edgeTask, int preference, int taskAppId) {
+
+	}
+
+	@Override
+	public void setupMobileDeviceArrival(WorkflowProperty edgeWorkflow) {
+
+	}
+
 	@Override
 	public void startEntity() {
 		super.startEntity();

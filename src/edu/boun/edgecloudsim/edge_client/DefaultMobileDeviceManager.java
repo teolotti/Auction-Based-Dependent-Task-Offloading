@@ -15,6 +15,7 @@
 
 package edu.boun.edgecloudsim.edge_client;
 
+import edu.boun.edgecloudsim.utils.WorkflowProperty;
 import org.cloudbus.cloudsim.UtilizationModel;
 import org.cloudbus.cloudsim.UtilizationModelFull;
 import org.cloudbus.cloudsim.Vm;
@@ -48,7 +49,17 @@ public class DefaultMobileDeviceManager extends MobileDeviceManager {
 	public UtilizationModel getCpuUtilizationModel() {
 		return new CpuUtilizationModel_Custom();
 	}
-	
+
+	@Override
+	public void submitTask(TaskProperty edgeTask, int preference, int taskAppId) {
+
+	}
+
+	@Override
+	public void setupMobileDeviceArrival(WorkflowProperty edgeWorkflow) {
+
+	}
+
 	/**
 	 * Submit cloudlets to the created VMs.
 	 * 

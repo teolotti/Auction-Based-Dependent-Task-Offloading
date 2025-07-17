@@ -244,8 +244,8 @@ public class SimSettings {
 			WAN_PROPAGATION_DELAY = Double.parseDouble(prop.getProperty("wan_propagation_delay", "0"));
 			GSM_PROPAGATION_DELAY = Double.parseDouble(prop.getProperty("gsm_propagation_delay", "0"));
 			LAN_INTERNAL_DELAY = Double.parseDouble(prop.getProperty("lan_internal_delay", "0"));
-			BANDWITH_WLAN = 1000 * Integer.parseInt(prop.getProperty("wlan_bandwidth"));
-			BANDWITH_MAN = 1000 * Integer.parseInt(prop.getProperty("man_bandwidth", "0"));
+			BANDWITH_WLAN = Integer.parseInt(prop.getProperty("wlan_bandwidth")); //Mbps unit in properties file
+			BANDWITH_MAN = Integer.parseInt(prop.getProperty("man_bandwidth", "0")); //Mbps unit in properties file
 			BANDWITH_WAN = 1000 * Integer.parseInt(prop.getProperty("wan_bandwidth", "0"));
 			BANDWITH_GSM =  1000 * Integer.parseInt(prop.getProperty("gsm_bandwidth", "0"));
 
@@ -881,7 +881,7 @@ public class SimSettings {
 		}
 
 		public void addDependency(int fromTaskIdx, int toTaskIdx, int weight) {
-			dependencies[toTaskIdx][fromTaskIdx] = weight; //weight is the amount of data to be trasmitted
+			dependencies[fromTaskIdx][toTaskIdx] = weight; //weight is the amount of data to be trasmitted
 		}
 
 		public double[] getWorkflowProperties() {
@@ -890,8 +890,8 @@ public class SimSettings {
 
 		public int getNumByTaskNameandCount(String taskName, int count) {
 			for (int i = 0; i < tasks.length; i++) {
-				if (tasks[i].name.equals(taskName) && tasks[i].index == count) {
-					return i;
+				if (tasks[i].getName().equals(taskName) && tasks[i].getIndex() == count) {
+					return i; // return the index of the task
 				}
 			}
 			return -1; // not found
@@ -997,6 +997,7 @@ public class SimSettings {
 				}
 
 				NodeList taskList = appElement.getElementsByTagName("task_type");
+				int globalTaskCount = 0;
 				for (int j = 0; j < taskList.getLength(); j++) {
 					Node taskNode = taskList.item(j);
 					Element taskElement = (Element) taskNode;
@@ -1005,16 +1006,22 @@ public class SimSettings {
 					isAttributePresent(taskElement, "count");
 					int count = Integer.parseInt(taskElement.getAttribute("count"));
 
-					TaskNode task = new TaskNode(taskElement.getAttribute("name"), taskAttributes.length);
-					for(int k=0; k<taskAttributes.length; k++){
+					TaskNode[] taskArray = new TaskNode[count];
+					for (int k = 0; k < count; k++) {
+						taskArray[k] = new TaskNode(taskElement.getAttribute("name"), taskAttributes.length);
+					}
+					for (int k = 0; k < taskAttributes.length; k++) {
 						isElementPresent(taskElement, taskAttributes[k]);
-						task.properties[k] = Double.parseDouble(taskElement.
-								getElementsByTagName(taskAttributes[k]).item(0).getTextContent());
+						double value = Double.parseDouble(taskElement.getElementsByTagName(taskAttributes[k]).item(0).getTextContent());
+						for (int l = 0; l < count; l++) {
+							taskArray[l].getTaskNodeProperties()[k] = value;
+						}
 					}
 
 					for (int k = 0; k < count; k++) {
-						task.setIndex(j * count + k);
-						workflows[i].addTask(task, j * count + k);
+						taskArray[k].setIndex(k+1);
+						workflows[i].addTask(taskArray[k], globalTaskCount);
+						globalTaskCount++;
 					}
 				}
 

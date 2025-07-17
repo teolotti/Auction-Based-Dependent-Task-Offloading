@@ -213,7 +213,7 @@ public class SimManager extends SimEntity {
 			case CREATE_TASK:
 				try {
 					TaskProperty edgeTask = (TaskProperty) ev.getData();
-					mobileDeviceManager.setupMobileDeviceArrival(edgeTask);						
+					//mobileDeviceManager.setupMobileDeviceArrival(edgeTask);//FIXME: change method
 				} catch (Exception e) {
 					e.printStackTrace();
 					System.exit(1);

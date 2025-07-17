@@ -650,6 +650,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		double predictedMakespan = computePredictedMakespan(personalMappings);
 		workflowProperty.setPredictedMakespan(predictedMakespan);
 		// Add the workflow to the workflow list
+		workflowList = new ArrayList<WorkflowProperty>(new ArrayList<>(Collections.nCopies(AuctionSimManager.getInstance().getNumOfMobileDevice(), null)));
 		workflowList.set(workflowProperty.getMobileDeviceId(), workflowProperty);
 	}
 
@@ -663,10 +664,29 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		extendedTaskList.add(0, new TaskProperty(0, 0, 0, 0, 0, 0, 0)); // Dummy task at the start
 		extendedTaskList.add(new TaskProperty(0, 0, 0, 0, 0, 0, 0)); // Dummy task at the end
 		TaskPCPutils[] taskPCPutils = new TaskPCPutils[extendedMatrix.length];
-		for (int i = extendedMatrix.length; i > 0; i--) {
-			double priority = computePriority(taskPCPutils, extendedMatrix, i - 1, extendedTaskList.get(i-1));
-			taskPCPutils[i-1] = new TaskPCPutils(i, false);
+		// Visita i nodi in ordine topologico inverso: processa un nodo solo se tutti i suoi successori sono già stati visitati
+		Set<Integer> visited = new HashSet<>();
+		int nNodes = extendedMatrix.length;
+		while (visited.size() < nNodes) {
+			for (int i = nNodes - 1; i >= 0; i--) {
+				if (visited.contains(i)) continue;
+				ArrayList<Integer> successors = getSuccessors(extendedMatrix, i);
+				boolean allSuccessorsVisited = true;
+				for (int succ : successors) {
+					if (!visited.contains(succ)) {
+						allSuccessorsVisited = false;
+						break;
+					}
+				}
+				if (allSuccessorsVisited) {
+					double priority = computePriority(taskPCPutils, extendedMatrix, i, extendedTaskList.get(i));
+					taskPCPutils[i] = new TaskPCPutils(priority, false, i);
+					visited.add(i);
+				}
+			}
 		}
+		taskPCPutils[0].setMarked(true);
+		taskPCPutils[nNodes - 1].setMarked(true);
 		// This method should compute the PCPs (Partial Critical Paths) for the workflow
 		// based on the tasks and their dependencies.
 		SearchPCP(0, extendedMatrix, taskPCPutils, workflowProperty);
@@ -762,19 +782,32 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 
 	private Map<Integer, List<Boolean>> buildBooleanMap(Map<Integer, List<TaskAssignmentInfo>> personalMappings) {
 		Map<Integer, List<Boolean>> booleanMap = new HashMap<>();
+
 		for (Map.Entry<Integer, List<TaskAssignmentInfo>> entry : personalMappings.entrySet()) {
+			int key = entry.getKey();
 			List<TaskAssignmentInfo> assignments = entry.getValue();
+
+			// Determina la dimensione necessaria della lista (numero massimo di task index + 1)
+			int maxTaskIndex = assignments.stream()
+					.mapToInt(TaskAssignmentInfo::getTaskIndex)
+					.max()
+					.orElse(0);
+
+			// Crea e inizializza la lista di booleani, se non esiste già
+			List<Boolean> flags = booleanMap.getOrDefault(key, new ArrayList<>());
+			while (flags.size() <= maxTaskIndex) {
+				flags.add(false);
+			}
+			booleanMap.putIfAbsent(key, flags); // solo se non già presente
+
 			for (TaskAssignmentInfo assignment : assignments) {
-				// Check if the task is assigned to an edge device
-				if (assignment.isAssigned()) {
-					booleanMap.get(entry.getKey()).set(assignment.getTaskIndex(), true);
-				} else {
-					booleanMap.get(entry.getKey()).set(assignment.getTaskIndex(), false);
-				}
+				flags.set(assignment.getTaskIndex(), assignment.isAssigned());
 			}
 		}
+
 		return booleanMap;
 	}
+
 
 	private double getLastFinishTime(List<TaskAssignmentInfo> assignments) {
 		// This method should return the last finish time from the list of task assignments
@@ -808,55 +841,56 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 
 	private int[][] addDummyTasks(int[][] taskDependencies) {
 		int n = taskDependencies.length;
-	int[][] extendedMatrix = new int[n + 2][n + 2];
+		int[][] extendedMatrix = new int[n + 2][n + 2];
 
-	// Copia la matrice originale nella matrice estesa, partendo da 1
-	for (int i = 0; i < n; i++) {
-	    for (int j = 0; j < n; j++) {
-	        extendedMatrix[i + 1][j + 1] = taskDependencies[i][j];
-	    }
-	}
+		// Copia la matrice originale nella matrice estesa, partendo da 1
+		for (int i = 0; i < n; i++) {
+	    	for (int j = 0; j < n; j++) {
+	        	extendedMatrix[i + 1][j + 1] = taskDependencies[i][j];
+	    	}
+		}
 
-	// Task di ingresso: archi uscenti verso tutti i task senza archi entranti
-	for (int j = 0; j < n; j++) {
-	    boolean hasIncoming = false;
-	    for (int i = 0; i < n; i++) {
-	        if (taskDependencies[i][j] != 0) {
-	            hasIncoming = true;
-	            break;
-	        }
-	    }
-	    if (!hasIncoming) {
-	        extendedMatrix[0][j + 1] = 1; // peso dummy
-	    }
-	}
+		// Task di ingresso: archi uscenti verso tutti i task senza archi entranti
+		for (int j = 0; j < n; j++) {
+			boolean hasIncoming = false;
+			for (int i = 0; i < n; i++) {
+				if (taskDependencies[i][j] != 0) {
+					hasIncoming = true;
+					break;
+				}
+			}
+			if (!hasIncoming) {
+				extendedMatrix[0][j + 1] = 1; // peso dummy
+			}
+		}
 
-	// Task di uscita: archi entranti da tutti i task senza archi uscenti
-	for (int i = 0; i < n; i++) {
-	    boolean hasOutgoing = false;
-	    for (int j = 0; j < n; j++) {
-	        if (taskDependencies[i][j] != 0) {
-	            hasOutgoing = true;
-	            break;
-	        }
-	    }
-	    if (!hasOutgoing) {
-	        extendedMatrix[i + 1][n + 1] = 1; // peso dummy
-	    }
-	}
+		// Task di uscita: archi entranti da tutti i task senza archi uscenti
+		for (int i = 0; i < n; i++) {
+			boolean hasOutgoing = false;
+			for (int j = 0; j < n; j++) {
+				if (taskDependencies[i][j] != 0) {
+					hasOutgoing = true;
+					break;
+				}
+			}
+			if (!hasOutgoing) {
+				extendedMatrix[i + 1][n + 1] = 1; // peso dummy
+			}
+		}
 
-	return extendedMatrix;
+		return extendedMatrix;
 	}
 
 	public double computePriority(TaskPCPutils[] taskPCPutils, int[][] dependencyMatrix, int taskIndex, TaskProperty taskProperty) {
 		// Need a way to get average trasmission rate between edge devices(B) and average processing rate of edge devices(ρ)
 		int numOfEdgeHosts = SimSettings.getInstance().getNumOfEdgeHosts();
-		int averageTransmissionRate = ((SimSettings.getInstance().getManBandwidth() * binomialCoefficient(numOfEdgeHosts, 2).intValue()) +
-				SimSettings.getInstance().getWlanBandwidth()) / (numOfEdgeHosts + 1);
-		double averageProcessingRate = SimSettings.getInstance().getMipsForCloudVM();
+		BigInteger binomialCoefficient = binomialCoefficient(numOfEdgeHosts, 2);
+		int averageTransmissionRate = ((SimSettings.getInstance().getManBandwidth() * binomialCoefficient.intValue()) +
+				SimSettings.getInstance().getWlanBandwidth()) / (binomialCoefficient.intValue()+1);
+		double averageProcessingRate = SimSettings.getInstance().getMipsForEdgeVM();
 		double priority = 0.0;
 		if (taskIndex == dependencyMatrix.length - 1) {
-			// If it's the last task, return a high priority
+			// If it's the last task, return 0
 			return priority;
 		} else {
 			ArrayList<Integer> successors = getSuccessors(dependencyMatrix, taskIndex);
@@ -864,7 +898,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 				TaskPCPutils successorTask = taskPCPutils[successor];
 				// Get the max of the successor for this formula: priority + weight in depMatrix / averageTransmissionRate
 				priority = Math.max(priority,
-						successorTask.getPriority() + dependencyMatrix[taskIndex][successor] / averageTransmissionRate);
+						successorTask.getPriority() + (double) dependencyMatrix[taskIndex][successor] / averageTransmissionRate);
 			}
 		}
 		priority += taskProperty.getLength() / averageProcessingRate; // Add the processing time of the current task
@@ -920,8 +954,10 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 	public int selectCandidateSuccessor(int[][] dependencies, TaskPCPutils[] taskPCPutils, int taskIndex) {
 		ArrayList<Integer> candidateSuccessors = getSuccessors(dependencies, taskIndex);
 
-		boolean candidate = false;
+		List<Integer> validSuccessors = new ArrayList<>();
 		for (int successor : candidateSuccessors) {
+			boolean candidate = false;
+
 			if (!taskPCPutils[successor].isMarked()) {
 				candidate = true;
 				for (int i = 0; i < dependencies.length; i++) {
@@ -931,14 +967,16 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 					}
 				}
 			}
-			if (!candidate) {
-				candidateSuccessors.remove(Integer.valueOf(successor));
+
+			if (candidate) {
+				validSuccessors.add(successor);
 			}
 		}
+
 		//seleziona come candidato il successore con priorità più alta
 		int selectedSuccessor = -1;
-		if (!candidateSuccessors.isEmpty()) {
-			for (int successor : candidateSuccessors) {
+		if (!validSuccessors.isEmpty()) {
+			for (int successor : validSuccessors) {
 				if (selectedSuccessor == -1 || taskPCPutils[successor].getPriority() > taskPCPutils[selectedSuccessor].getPriority()) {
 					selectedSuccessor = successor;
 				}
@@ -957,7 +995,8 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		if (k > n / 2) {
 			k = n - k; // Utilizza la simmetria del coefficiente binomiale
 		}
-		return factorial(n).divide(factorial(k).multiply(factorial(n - k)));
+		BigInteger bin = factorial(n).divide(factorial(k).multiply(factorial(n - k)));
+		return bin;
 	}
 
 	public static BigInteger factorial(int n) {
