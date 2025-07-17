@@ -189,7 +189,7 @@ public class SimLogger {
 		vmLoadList = new LinkedList<VmLoadLogItem>();
 		apDelayList = new LinkedList<ApDelayLogItem>();
 		
-		numOfAppTypes = SimSettings.getInstance().getTaskLookUpTable().length;
+		numOfAppTypes = SimSettings.getInstance().getWorkflows().length;//task to workflow
 		
 		if (SimSettings.getInstance().getDeepFileLoggingEnabled()) {
 			try {
@@ -374,10 +374,10 @@ public class SimLogger {
 
 				if (i < numOfAppTypes) {
 					// if related app is not used in this simulation, just discard it
-					if (SimSettings.getInstance().getTaskLookUpTable()[i][0] == 0)
+					if (SimSettings.getInstance().getWorkflows()[i].getWorkflowProperties()[0] == 0)//task to workflow
 						continue;
 
-					fileName = SimSettings.getInstance().getTaskName(i) + "_GENERIC.log";
+					fileName = SimSettings.getInstance().getWorkflows()[i].getName() + "_GENERIC.log";//task to workflow
 				}
 
 				genericFiles[i] = new File(outputFolder, filePrefix + "_" + fileName);
@@ -508,7 +508,7 @@ public class SimLogger {
 
 				if (i < numOfAppTypes) {
 					// if related app is not used in this simulation, just discard it
-					if (SimSettings.getInstance().getTaskLookUpTable()[i][0] == 0)
+					if (SimSettings.getInstance().getWorkflows()[i].getWorkflowProperties()[0] == 0)//task to workflow
 						continue;
 				}
 
@@ -621,7 +621,7 @@ public class SimLogger {
 					appendToFile(genericBWs[i], genericResult6);
 				}
 				else {
-					printLine(SimSettings.getInstance().getTaskName(i));
+					printLine(SimSettings.getInstance().getWorkflows()[i].getName());//task to workflow
 					printLine("# of tasks (Edge/Cloud): "
 							+ (failedTask[i] + completedTask[i]) + "("
 							+ (failedTaskOnEdge[i] + completedTaskOnEdge[i]) + "/" 
@@ -654,7 +654,7 @@ public class SimLogger {
 				if (i < numOfAppTypes) {
 					// if related app is not used in this simulation, just
 					// discard it
-					if (SimSettings.getInstance().getTaskLookUpTable()[i][0] == 0)
+					if (SimSettings.getInstance().getWorkflows()[i].getWorkflowProperties()[0] == 0)//task to workflow
 						continue;
 				}
 				genericBWs[i].close();
