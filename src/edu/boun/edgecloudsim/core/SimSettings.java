@@ -1037,7 +1037,7 @@ public class SimSettings {
 						int fromTaskCount = Integer.parseInt(dependencyElement.getAttribute("n1"));
 						int toTaskCount = Integer.parseInt(dependencyElement.getAttribute("n2"));
 
-						int weight = Integer.parseInt(dependencyElement.getAttribute("weight"));
+						int weight = Integer.parseInt(dependencyElement.getAttribute("weight"));// weight is the amount of data to be transmitted in KB
 
 						int fromTaskIdx = workflows[i].getNumByTaskNameandCount(fromTaskName, fromTaskCount);
 						int toTaskIdx = workflows[i].getNumByTaskNameandCount(toTaskName, toTaskCount);

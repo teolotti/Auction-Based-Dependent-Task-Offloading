@@ -715,7 +715,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 			double bestfinishTime = Double.POSITIVE_INFINITY;
 			List<TaskAssignmentInfo> bestAssignments = new ArrayList<>();
 			for (int i = 0; i < numofEdgeHosts; i++) {
-				double currentReady = readyTimes[edgeDeviceId];
+				double currentReady = readyTimes[i];
 				List<TaskAssignmentInfo> assignments = simulateTaskAssignments(pcp, i, currentReady, workflowProperty, personalMappings, statuses);
 				// Get the status of the edge device
 				// EdgeStatus status = statuses.get(i);
@@ -742,39 +742,45 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 	private List<TaskAssignmentInfo> simulateTaskAssignments(PCP pcp, int edgeDeviceId, double currentReadyTime,
 															 WorkflowProperty workflowProperty, Map<Integer, List<TaskAssignmentInfo>> personalMappings, ArrayList<EdgeStatus> statuses) {
 		List<TaskAssignmentInfo> assignments = new ArrayList<>();
+		Map<Integer, TaskAssignmentInfo> localMappings = new HashMap<>();
+		double mips = statuses.get(edgeDeviceId).getMips();
+		double manBandwidth = SimSettings.getInstance().getManBandwidth();
+		double wlanBandwidth = SimSettings.getInstance().getWlanBandwidth();
 		// Simulate the task assignments for the given PCP and edge device
 		for(int taskIndex : pcp.getTaskIndexes()) {
 			personalMappings.get(edgeDeviceId).set(taskIndex, new TaskAssignmentInfo(taskIndex, 0.0, 0.0, currentReadyTime));
 			ArrayList<Integer> predecessors = getPredecessors(workflowProperty.getDependencyMatrix(), taskIndex);
 			double dataReadyTime = 0.0;
+
 			if(predecessors.isEmpty()) {
-				double transmissionTime = (double) workflowProperty.getUploadSize() / SimSettings.getInstance().getWlanBandwidth();
+				double transmissionTime = ((double) workflowProperty.getUploadSize()*0.008) / SimSettings.getInstance().getWlanBandwidth(); //KB to Mbps conversion
 				dataReadyTime = workflowProperty.getStartTime() + transmissionTime;
 			} else {
 				// calculate finish time plus transmission time for each predecessor
 				for (int predecessor : predecessors) {
-					for(int j = 0; j < personalMappings.size(); j++) {
-						TaskAssignmentInfo predecessorInfo = personalMappings.get(j).get(predecessor);
-						if (predecessorInfo != null) {
-							if (j == edgeDeviceId) {
-								// If the predecessor is on the same edge device, just use its finish time
-								dataReadyTime = Math.max(dataReadyTime, predecessorInfo.getPredictedFinishTime()); //predicted finish time del pred è start time più computazione
-							} else {
-								// If the predecessor is on a different edge device, add transmission time
-								dataReadyTime = Math.max(dataReadyTime, predecessorInfo.getPredictedFinishTime()+
-									(double) workflowProperty.getDependencyMatrix()[predecessor][taskIndex] /
-											SimSettings.getInstance().getManBandwidth());
+					boolean found = false;
+
+					if (localMappings.containsKey(predecessor)) {
+						dataReadyTime = Math.max(dataReadyTime, localMappings.get(predecessor).getPredictedFinishTime());
+						found = true;
+					}
+					if (!found) {
+						for(int j = 0; j < personalMappings.size(); j++) {
+							TaskAssignmentInfo predecessorInfo = personalMappings.get(j).get(predecessor);
+							if (predecessorInfo != null && predecessorInfo.isAssigned()) {
+								double transDelay = (j == edgeDeviceId) ? 0.0 : ((double) workflowProperty.getDependencyMatrix()[predecessor][taskIndex]*0.008) / manBandwidth;
+								dataReadyTime = Math.max(dataReadyTime, predecessorInfo.getPredictedFinishTime() + transDelay);
 							}
 						}
 					}
 				}
 			}
 			double predStartTime = Math.max(dataReadyTime, currentReadyTime);
-			double predFinishTime = predStartTime + (double) workflowProperty.getTaskList().get(taskIndex).getLength() /
-					statuses.get(edgeDeviceId).getMips();
+			double predFinishTime = predStartTime + (double) workflowProperty.getTaskList().get(taskIndex).getLength() / mips;
 			// Update the ready time for the edge device
 			currentReadyTime = predFinishTime;
 			TaskAssignmentInfo assignmentInfo = new TaskAssignmentInfo(taskIndex, predStartTime, predFinishTime, currentReadyTime, true);
+			localMappings.put(taskIndex, assignmentInfo);
 			assignments.add(assignmentInfo);
 		}
 		return assignments;
@@ -945,7 +951,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 			// Add the found PCP to the workflow property
 			workflowProperty.addPCP(pcp);
 			for (int i = 0; i < pcp.getTaskIndexes().size(); i++) {
-				SearchPCP(pcp.getTaskIndexes().get(i), dependencyMatrix, taskPCPutils, workflowProperty);
+				SearchPCP(pcp.getTaskIndexes().get(i)+1, dependencyMatrix, taskPCPutils, workflowProperty);
 			}
 			selectedSuccessor = selectCandidateSuccessor(dependencyMatrix, taskPCPutils, taskIndex);
 		}
