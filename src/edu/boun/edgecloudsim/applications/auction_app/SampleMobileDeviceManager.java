@@ -173,13 +173,12 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 			if(vm.getCloudletScheduler().getCloudletExecList().isEmpty())//if edge device queue is empty, fill it
 				schedule(getId(), 0.0, RUN_AUCTION);
 			WorkflowProperty workflow = workflowList.get(task.getMobileDeviceId());
-			AppDependencies dependencies = appDependenciesList.get(task.getMobileDeviceId());
-			dependencies.removeTask(task.getTaskAppId());
 			ArrayList<Integer> finalTaskIds = new ArrayList<>();
 			finalTaskIds = workflow.getFinalTaskIds();
 			workflow.removeFinalTaskIndex(task.getTaskAppId());
 			workflow.markCompleted(task.getTaskAppId());
-			schedule(getId(), 0.0, SEND_RESULTS_TO_UNLOCKABLE_TASKS, task);
+			if(!finalTaskIds.contains(task.getTaskAppId()))
+				schedule(getId(), 0.0, SEND_RESULTS_TO_UNLOCKABLE_TASKS, task);
 		
 			
 			//if no last task left, conclude, send to the mobile device and schedule an auction
@@ -253,7 +252,12 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 				ArrayList<Integer> completed = workflowList.get(task.getMobileDeviceId()).getCompletedTasks();
 				if(unlockedTasks.contains(task.getTaskAppId()) && !completed.contains(task.getTaskAppId())) {
 					submitTaskToVm(task, SimSettings.VM_TYPES.EDGE_VM);
+					AppDependencies dependencies = appDependenciesList.get(task.getMobileDeviceId());
+					dependencies.removeTask(task.getTaskAppId());
 				}
+				ArrayList<Integer> initialTasks = workflowList.get(task.getMobileDeviceId()).getInitialTaskIds();
+				if(initialTasks.contains(task.getTaskAppId()))
+					submitTaskToVm(task, SimSettings.VM_TYPES.EDGE_VM);
 				break;
 			}
 			case REQUEST_RECEIVED_BY_REMOTE_EDGE_DEVICE:
@@ -392,6 +396,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 				ArrayList<Integer> firsts = workflowList.get(workflow.getMobileDeviceId()).getInitialTaskIds();
 				//submit the first tasks of the winner using an indexed list
 				ArrayList<TaskProperty> tasks = workflow.getTaskList();
+				AppDependencies dependencies = appDependenciesList.get(workflow.getMobileDeviceId());
 				
 				for(int i = 0; i < firsts.size(); i++) {
 					int index = firsts.get(i);
@@ -399,6 +404,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 					if(preference == -1)
 						System.out.println("something went wrong in preference retrieving");
 					submitTask(tasks.get(index), preference, tasks.get(index).getTaskAppId());
+					dependencies.removeTask(tasks.get(index).getTaskAppId());
 				}
 				break;
 			}//when submitting tasks, delays are 0 for same edge device tasks, > 0 for different edges
