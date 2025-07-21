@@ -28,7 +28,8 @@ import org.cloudbus.cloudsim.core.CloudSim;
 public class SampleNetworkModel extends NetworkModel {
 	public static enum NETWORK_TYPE {WLAN, LAN};
 	public static enum LINK_TYPE {DOWNLOAD, UPLOAD};
-	public static double MAN_BW = 1300*1024; //Kbps
+	public static double MAN_BW = SimSettings.getInstance().getManBandwidth(); //Kbps
+	public static double WLAN_BW = SimSettings.getInstance().getWlanBandwidth(); //Kbps
 
 	@SuppressWarnings("unused")
 	private int manClients;
@@ -333,9 +334,15 @@ public class SampleNetworkModel extends NetworkModel {
 		int numOfWlanUser = wlanClients[accessPointLocation.getServingWlanId()];
 		double taskSizeInKb = dataSize * (double)8; //KB to Kb
 		double result=0;
+
+		result = taskSizeInKb / WLAN_BW; //seconds
+		if (result < 1e-3)
+			result = 1e-3; //minimum delay is 1 ms
+		if (result > 1e-2)
+			result = 1e-2; //maximum delay is 10 ms
 		
-		if(numOfWlanUser < experimentalWlanDelay.length)
-			result = taskSizeInKb /*Kb*/ / (experimentalWlanDelay[numOfWlanUser] * (double) 3 ) /*Kbps*/; //802.11ac is around 3 times faster than 802.11n
+//		if(numOfWlanUser < experimentalWlanDelay.length)
+//			result = taskSizeInKb /*Kb*/ / (experimentalWlanDelay[numOfWlanUser] * (double) 3 ) /*Kbps*/; //802.11ac is around 3 times faster than 802.11n
 
 		//System.out.println("--> " + numOfWlanUser + " user, " + taskSizeInKb + " KB, " +result + " sec");
 		return result;
