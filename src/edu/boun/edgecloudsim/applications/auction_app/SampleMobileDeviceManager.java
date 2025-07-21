@@ -650,7 +650,9 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		double predictedMakespan = computePredictedMakespan(personalMappings);
 		workflowProperty.setPredictedMakespan(predictedMakespan);
 		// Add the workflow to the workflow list
-		workflowList = new ArrayList<WorkflowProperty>(new ArrayList<>(Collections.nCopies(AuctionSimManager.getInstance().getNumOfMobileDevice(), null)));
+		if (workflowList == null || workflowList.isEmpty()) {
+			workflowList = new ArrayList<>(Collections.nCopies(AuctionSimManager.getInstance().getNumOfMobileDevice(), null));
+		}
 		workflowList.set(workflowProperty.getMobileDeviceId(), workflowProperty);
 	}
 
