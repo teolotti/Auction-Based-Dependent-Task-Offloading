@@ -39,6 +39,8 @@ import edu.boun.edgecloudsim.utils.Location;
 import edu.boun.edgecloudsim.utils.SimLogger;
 import edu.boun.edgecloudsim.utils.TaskProperty;
 import edu.boun.edgecloudsim.utils.WorkflowProperty;
+
+import org.cloudbus.cloudsim.CloudletScheduler;
 import org.cloudbus.cloudsim.UtilizationModel;
 import org.cloudbus.cloudsim.UtilizationModelFull;
 import org.cloudbus.cloudsim.Vm;
@@ -73,6 +75,9 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 	private static final int ENQUEUE_REQ     = BASE+10;
 	private static final int RUN_AUCTION     = BASE+11;
 	private static final int AUCTION_RESULT  = BASE+12;
+	
+	private int completed = 0;
+	private int failed = 0;
 
 	private  Deque<Request> reqQueue = new ArrayDeque<>();
 	private  int auctionTodoCounter = 0;
@@ -80,8 +85,8 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 
 	private int taskIdCounter=0;
 
-	private ArrayList<WorkflowProperty> workflowList = new ArrayList<>();
-	private ArrayList<AppDependencies> appDependenciesList = new ArrayList<>();
+	private ArrayList<WorkflowProperty> workflowList = null;
+	private Map<Integer, AppDependencies> appDependenciesList = new HashMap<>();
 
 	
 	
@@ -124,6 +129,30 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 	protected void processCloudletReturn(SimEvent ev) {
 		NetworkModel networkModel = SimManager.getInstance().getNetworkModel();
 		Task task = (Task) ev.getData();
+		int vmId = task.getAssociatedVmId();
+
+	    // find the same VM & scheduler
+	    Vm chosenVm = null;
+	    for (Vm v : SimManager.getInstance()
+	                          .getEdgeServerManager()
+	                          .getVmList(vmId)) {
+	        if (v.getId() == vmId) {
+	            chosenVm = v; break;
+	        }
+	    }
+	    CloudletScheduler scheduler = chosenVm.getCloudletScheduler();
+
+	    // print the after‐state
+	    System.out.printf(
+	      "[%.3f] RETURN cloudlet#%d from VM=%d  |  exec=%d waiting=%d  waited=%.3f execTime=%.3f%n",
+	      CloudSim.clock(),
+	      task.getCloudletId(),
+	      vmId,
+	      scheduler.getCloudletExecList().size(),
+	      scheduler.getCloudletWaitingList().size(),
+	      task.getWaitingTime(),
+	      task.getActualCPUTime()
+	    );
 		
 		SimLogger.getInstance().taskExecuted(task.getCloudletId());
 
@@ -167,15 +196,19 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 					getHostList().get(0)).getVmList().get(0));
 			if(vm.getCloudletScheduler().getCloudletExecList().isEmpty())//if edge device queue is empty, fill it
 				schedule(getId(), 0.0, RUN_AUCTION);
-			//if last task, pop it from the index list for this workflow, else unlock dependencies and submit tasks
 			WorkflowProperty workflow = workflowList.get(task.getMobileDeviceId());
-			ArrayList<Integer> finalTaskIds = workflow.getFinalTaskIds();
-			if(workflow.removeFinalTaskIndex(task.getTaskAppId())) {
-				schedule(getId(), 0.0, SEND_RESULTS_TO_UNLOCKABLE_TASKS, task);
-			}
+			AppDependencies dependencies = appDependenciesList.get(task.getMobileDeviceId());
+			dependencies.removeTask(task.getTaskAppId());
+			ArrayList<Integer> finalTaskIds = new ArrayList<>();
+			finalTaskIds = workflow.getFinalTaskIds();
+			workflow.removeFinalTaskIndex(task.getTaskAppId());
+			workflow.markCompleted(task.getTaskAppId());
+			schedule(getId(), 0.0, SEND_RESULTS_TO_UNLOCKABLE_TASKS, task);
 		
+			
 			//if no last task left, conclude, send to the mobile device and schedule an auction
 			if(finalTaskIds.isEmpty()) {
+				System.out.println("completati: " + ++completed);
 				//if neighbor edge device is selected
 				if(host.getLocation().getServingWlanId() != task.getSubmittedLocation().getServingWlanId())
 				{
@@ -205,9 +238,10 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 					SimLogger.getInstance().failedDueToBandwidth(task.getCloudletId(), CloudSim.clock(), delayType);
 				}
 				schedule(getId(), 0.0, RUN_AUCTION);//run auction when an app is completed
+			}else {
+				SimLogger.getInstance().taskEnded(task.getCloudletId(), CloudSim.clock());
 			}
 		}
-		
 	}
 	
 	protected void processOtherEvent(SimEvent ev) {
@@ -239,8 +273,11 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 				networkModel.uploadFinished(task.getSubmittedLocation(), SimSettings.GENERIC_EDGE_DEVICE_ID);
 				//if task is unlocked, submit it
 				ArrayList<Integer> unlockedTasks = appDependenciesList.get(task.getMobileDeviceId()).checkForUnlockedTasks();
-				if(unlockedTasks.contains(task.getTaskAppId()))
+				//but if it's already completed don't
+				ArrayList<Integer> completed = workflowList.get(task.getMobileDeviceId()).getCompletedTasks();
+				if(unlockedTasks.contains(task.getTaskAppId()) && !completed.contains(task.getTaskAppId())) {
 					submitTaskToVm(task, SimSettings.VM_TYPES.EDGE_VM);
+				}
 				break;
 			}
 			case REQUEST_RECEIVED_BY_REMOTE_EDGE_DEVICE:
@@ -317,9 +354,9 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 			}
 			case ENQUEUE_REQ:
 			{
-				WorkflowProperty workflow = (WorkflowProperty) ev.getData();
+				WorkflowProperty workflow = (WorkflowProperty) ev.getData();		
 				
-				Task dummyTask = new Task (workflow.getMobileDeviceId(), -1, 0, 1, workflow.getUploadSize(), workflow.getDownloadSize(), null, null, null);
+				Task dummyTask = new Task (workflow.getMobileDeviceId(), -1, 0, 1, workflow.getUploadSize(), workflow.getDownloadSize(), null, null, null, 0);
 				
 				//need to handle two-hop situations
 				double uploadCost = networkModel.getUploadDelay(workflow.getMobileDeviceId(), SimSettings.GENERIC_EDGE_DEVICE_ID, dummyTask);
@@ -334,6 +371,10 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 				double bid = decideBid(workflow.getTotalWorkload(), maxUnitCost, minMips);
 				
 				Request request = new Request(workflow.getMobileDeviceId(), bid, processingEstimated, workflow);
+				
+				AppDependencies dependencies = new AppDependencies();
+				dependencies.addWorkflowDependencies(workflow);
+				appDependenciesList.put(workflow.getMobileDeviceId(), dependencies);
 
 				reqQueue.add(request);
 				if(!auctionRunning)
@@ -349,7 +390,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 				auctionRunning = true;
 				AuctionResult winnerData = ((SampleEdgeOrchestrator)SimManager.getInstance().getEdgeOrchestrator()).auction(reqQueue);
 				Request winner = null;
-				double auctionTime = (double) reqQueue.size() * Math.log((double) reqQueue.size()) * 0.0001;
+				double auctionTime = (double) reqQueue.size() * Math.log((double) reqQueue.size()) * 0.001;
 				for(Request request : reqQueue) {
 					if(winnerData.getWinnerId() == request.getId()) //FIXME: check this if clause
 						winner = request;
@@ -372,26 +413,25 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 				auctionRunning = false;
 				Request winner = (Request) ev.getData();
 				WorkflowProperty workflow = winner.getWorkflow();
-				AppDependencies dependencyTracker = new AppDependencies();
-				dependencyTracker.addWorkflowDependencies(workflow);
 				ArrayList<Integer> firsts = workflowList.get(workflow.getMobileDeviceId()).getInitialTaskIds();
-				//submit the first tasks using an indexed list
+				//submit the first tasks of the winner using an indexed list
 				ArrayList<TaskProperty> tasks = workflow.getTaskList();
 				
 				for(int i = 0; i < firsts.size(); i++) {
-					int preference = workflow.getPreferredDatacenterForTask(i);
-					submitTask(tasks.get(i), preference, tasks.get(i).getTaskAppId());
+					int index = firsts.get(i);
+					int preference = workflow.getPreferredDatacenterForTask(index);
+					if(preference == -1)
+						System.out.println("something went wrong in preference retrieving");
+					submitTask(tasks.get(index), preference, tasks.get(index).getTaskAppId());
 				}
 				break;
 			}//when submitting tasks, delays are 0 for same edge device tasks, > 0 for different edges
 			case SEND_RESULTS_TO_UNLOCKABLE_TASKS:
 			{
 				Task task = (Task) ev.getData();
-				AppDependencies appDependencies = appDependenciesList.get(task.getMobileDeviceId());
-				ArrayList<Integer> unlockableTaskIds = appDependencies.getUnlockableTasks(task.getTaskAppId());
 				WorkflowProperty workflow = workflowList.get(task.getMobileDeviceId());
+				ArrayList<Integer> unlockableTaskIds = workflow.getUnlockableTasks(task.getTaskAppId());
 				ArrayList<TaskProperty> tasks = workflow.getTaskList();
-				
 				for(int i = 0; i < unlockableTaskIds.size(); i++) {
 					int preference = workflow.getPreferredDatacenterForTask(i);
 					int index = unlockableTaskIds.get(i);
@@ -402,8 +442,18 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 			case UNLOCK_TASKS:
 			{
 				Task task = (Task) ev.getData();
-				AppDependencies appDependencies = appDependenciesList.get(task.getMobileDeviceId());
-				appDependencies.unlockDependency(task.getTaskAppId());
+				
+				WorkflowProperty workflow = workflowList.get(task.getMobileDeviceId());
+				ArrayList<Integer> tasksToUnlock = workflow.getUnlockableTasks(task.getTaskAppId());
+				for(Integer taskId : tasksToUnlock) {
+					AppDependencies appDependencies = appDependenciesList.get(task.getMobileDeviceId());
+					if(appDependencies.getDependencies().get(taskId) == null)
+						break;
+					if(appDependencies.getDependencies().get(taskId).contains(task.getTaskAppId())){
+						appDependencies.unlockDependency(taskId, task.getTaskAppId());
+					}
+					
+				}
 				break;
 			}
 			default:
@@ -557,7 +607,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		
 		double theoreticalDelay = networkModel.getUploadDelay(task.getMobileDeviceId(), SimSettings.GENERIC_EDGE_DEVICE_ID, task);
 		
-		if(theoreticalDelay>0){//TODO find a way to incorporate capacity rejection
+		if(theoreticalDelay>0){
 			
 			Vm selectedVM = SimManager.getInstance().getEdgeOrchestrator().getVmToOffload(task, nextHopId);
 			
@@ -583,8 +633,9 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 				SimLogger.getInstance().taskStarted(task.getCloudletId(), CloudSim.clock());
 				SimLogger.getInstance().setUploadDelay(task.getCloudletId(), delay, delayType);
 				
-				schedule(getId(), delay, UNLOCK_TASKS, completedTask);//first unlock dependencies
-				schedule(getId(), delay, nextEvent, task);//then check if submittable to vm
+				
+				schedule(getId(), delay, UNLOCK_TASKS, completedTask);//unlock current dependency
+				schedule(getId(), delay, nextEvent, task);//then check if fully unlocked for vm submitting
 			}
 			else{
 				//SimLogger.printLine("Task #" + task.getCloudletId() + " cannot assign to any VM");
@@ -602,6 +653,40 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		//SimLogger.printLine(CloudSim.clock() + ": Cloudlet#" + task.getCloudletId() + " is submitted to VM#" + task.getVmId());
 		schedule(getVmsToDatacentersMap().get(task.getVmId()), 0, CloudSimTags.CLOUDLET_SUBMIT, task);
 
+		int vmId = task.getAssociatedVmId();
+	    int dcId = getVmsToDatacentersMap().get(vmId);
+
+	    // 1) Find the Vm object by ID
+	    Vm chosenVm = null;
+	    // your orchestrator holds the global VM list:
+	    for (Vm v : SimManager.getInstance()
+	                          .getEdgeServerManager()
+	                          .getVmList(vmId)) {
+	        if (v.getId() == vmId) {
+	            chosenVm = v;
+	            break;
+	        }
+	    }
+	    if (chosenVm == null) {
+	        System.err.println("ERROR: VM#" + vmId + " not found!");
+	        return;
+	    }
+
+	    // 2) Now grab its scheduler
+	    CloudletScheduler scheduler = chosenVm.getCloudletScheduler();
+
+	    // 3) Print the before‐state
+	    System.out.printf(
+	      "[%.3f] SUBMIT cloudlet#%d (len=%d) → DC=%d, VM=%d  |  exec=%d waiting=%d%n",
+	      CloudSim.clock(),
+	      task.getCloudletId(),
+	      task.getCloudletLength(),
+	      dcId,
+	      vmId,
+	      scheduler.getCloudletExecList().size(),
+	      scheduler.getCloudletWaitingList().size()
+	    );
+		
 		SimLogger.getInstance().taskAssigned(task.getCloudletId(),
 				task.getAssociatedDatacenterId(),
 				task.getAssociatedHostId(),
@@ -616,7 +701,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		Task task = new Task(edgeTask.getMobileDeviceId(), ++taskIdCounter,
 				edgeTask.getLength(), edgeTask.getPesNumber(),
 				edgeTask.getInputFileSize(), edgeTask.getOutputFileSize(),
-				utilizationModelCPU, utilizationModel, utilizationModel);
+				utilizationModelCPU, utilizationModel, utilizationModel, edgeTask.getUtilizationOnEdge());
 		
 		//set the owner of this task
 		task.setUserId(this.getId());
@@ -634,11 +719,15 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 	//=============================================
 	//Additional methods for auction application
 	//=============================================
-
+	@Override
+	public void setupWorkflowList() {
+		if(workflowList == null)
+			workflowList = new ArrayList<WorkflowProperty>(new ArrayList<>(Collections.nCopies(AuctionSimManager.getInstance().getNumOfMobileDevice(), null)));
+	}
 
 	@Override
 	public void processWorkflow(WorkflowProperty workflowProperty) {
-		System.out.println("Processing Workflow");
+		System.out.println("Processing Workflow " + workflowProperty.getMobileDeviceId() + ", app " + workflowProperty.getWorkflowType());
 		// Compute the PCPs (Partial Critical Paths) for the workflow
 		computePCPs(workflowProperty);
 		// Next step is to create personal mapping for each task in the workflow
@@ -650,7 +739,6 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		double predictedMakespan = computePredictedMakespan(personalMappings);
 		workflowProperty.setPredictedMakespan(predictedMakespan);
 		// Add the workflow to the workflow list
-		workflowList = new ArrayList<WorkflowProperty>(new ArrayList<>(Collections.nCopies(AuctionSimManager.getInstance().getNumOfMobileDevice(), null)));
 		workflowList.set(workflowProperty.getMobileDeviceId(), workflowProperty);
 	}
 
@@ -661,8 +749,8 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		int[][] extendedMatrix = addDummyTasks(taskDependencies);
 		ArrayList<TaskProperty> extendedTaskList = new ArrayList<>(workflowProperty.getTaskList());
 		// Aggiungi task dummy all'inizio e alla fine della lista
-		extendedTaskList.add(0, new TaskProperty(0, 0, 0, 0, 0, 0, 0)); // Dummy task at the start
-		extendedTaskList.add(new TaskProperty(0, 0, 0, 0, 0, 0, 0)); // Dummy task at the end
+		extendedTaskList.add(0, new TaskProperty(0, 0, 0, 0, 0, 0, 0, 0)); // Dummy task at the start
+		extendedTaskList.add(new TaskProperty(0, 0, 0, 0, 0, 0, 0, 0)); // Dummy task at the end
 		TaskPCPutils[] taskPCPutils = new TaskPCPutils[extendedMatrix.length];
 		// Visita i nodi in ordine topologico inverso: processa un nodo solo se tutti i suoi successori sono già stati visitati
 		Set<Integer> visited = new HashSet<>();
@@ -810,11 +898,9 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 				flags.set(assignment.getTaskIndex(), assignment.isAssigned());
 			}
 		}
-
 		return booleanMap;
 	}
-
-
+	
 	private double getLastFinishTime(List<TaskAssignmentInfo> assignments) {
 		// This method should return the last finish time from the list of task assignments
 		double lastFinishTime = 0.0;

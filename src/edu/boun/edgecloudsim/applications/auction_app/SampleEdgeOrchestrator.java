@@ -63,7 +63,7 @@ public class SampleEdgeOrchestrator extends EdgeOrchestrator {
 		}
 		else if(simScenario.equals("TWO_TIER_WITH_EO")){
 			//dummy task to simulate a task with 1 Mbit file size to upload and download 
-			Task dummyTask = new Task(0, 0, 0, 0, 128, 128, new UtilizationModelFull(), new UtilizationModelFull(), new UtilizationModelFull());
+			Task dummyTask = new Task(0, 0, 0, 0, 128, 128, new UtilizationModelFull(), new UtilizationModelFull(), new UtilizationModelFull(), 0);
 			
 			double wanDelay = SimManager.getInstance().getNetworkModel().getUploadDelay(task.getMobileDeviceId(),
 					SimSettings.CLOUD_DATACENTER_ID, dummyTask /* 1 Mbit */);
@@ -122,7 +122,7 @@ public class SampleEdgeOrchestrator extends EdgeOrchestrator {
 	        r2.getBid() / r2.getProcessingEstimated(),
 	        r1.getBid() / r1.getProcessingEstimated()));
 		int winnerId = a[0].getId();
-		double payment = requests.size() > 1 ? a[0].getBid() : (a[1].getBid()/a[1].getProcessingEstimated()) * a[0].getProcessingEstimated();
+		double payment = requests.size() > 1 ? (a[1].getBid()/a[1].getProcessingEstimated()) * a[0].getProcessingEstimated() : a[0].getBid();
 		
 		return new AuctionResult(winnerId, payment);
 	}

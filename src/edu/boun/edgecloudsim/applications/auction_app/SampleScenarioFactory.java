@@ -51,7 +51,7 @@ public class SampleScenarioFactory implements ScenarioFactory {
 
 	@Override
 	public MobilityModel getMobilityModel() {
-		return new NomadicMobility(numOfMobileDevice,simulationTime);
+		return new StaticMobility(numOfMobileDevice,simulationTime);
 	}
 
 	@Override

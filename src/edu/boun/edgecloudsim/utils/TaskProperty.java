@@ -21,8 +21,17 @@ public class TaskProperty {
 	private int pesNumber;
 	private int mobileDeviceId;
 	private int TaskAppId;
+	
 
-	public TaskProperty(double _startTime, int _mobileDeviceId, int _taskType, int _pesNumber, long _length, long _inputFileSize, long _outputFileSize) {
+	private double utilizationOnEdge;
+
+	public double getUtilizationOnEdge() {
+		return utilizationOnEdge;
+	}
+	public void setUtilizationOnEdge(double utilizationOnEdge) {
+		this.utilizationOnEdge = utilizationOnEdge;
+	}
+	public TaskProperty(double _startTime, int _mobileDeviceId, int _taskType, int _pesNumber, long _length, long _inputFileSize, long _outputFileSize, double _utilizationOnEdge) {
 		startTime=_startTime;
 		mobileDeviceId=_mobileDeviceId;
 		taskType=_taskType;
@@ -30,8 +39,9 @@ public class TaskProperty {
 		length = _length;
 		outputFileSize = _inputFileSize;
 		inputFileSize = _outputFileSize;
+		utilizationOnEdge = _utilizationOnEdge;
 	}
-	public TaskProperty(double _startTime, int _mobileDeviceId, int _taskType, int _pesNumber, long _length, long _inputFileSize, long _outputFileSize, int _taskAppId) {
+	public TaskProperty(double _startTime, int _mobileDeviceId, int _taskType, int _pesNumber, long _length, long _inputFileSize, long _outputFileSize, int _taskAppId, double _utilizationOnEdge) {
 		startTime=_startTime;
 		mobileDeviceId=_mobileDeviceId;
 		taskType=_taskType;
@@ -40,6 +50,7 @@ public class TaskProperty {
 		outputFileSize = _inputFileSize;
 		inputFileSize = _outputFileSize;
 		TaskAppId = _taskAppId;
+		utilizationOnEdge = _utilizationOnEdge;
 	}
 
 	public TaskProperty(int _mobileDeviceId, int _taskType, double _startTime, ExponentialDistribution[][] expRngList) {
@@ -94,5 +105,9 @@ public class TaskProperty {
 
 	public int getTaskAppId() {
 		return TaskAppId;
+	}
+	
+	public void setTaskAppId(int taskAppId) {
+		TaskAppId = taskAppId;
 	}
 }

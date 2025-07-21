@@ -38,8 +38,7 @@ public class CpuUtilizationModel_Custom implements UtilizationModel {
 			index = 10;
 		else if(task.getAssociatedDatacenterId() == SimSettings.MOBILE_DATACENTER_ID)
 			index = 11;
-
-		return SimSettings.getInstance().getTaskLookUpTable()[task.getTaskType()][index];
+		return task.getUtilizationOnEdge();
 	}
 	
 	public void setTask(Task _task){

@@ -84,6 +84,7 @@ public class WorkflowLoadGenerator extends LoadGeneratorModel {
             double deadline = virtualTime + basicMakespan * deadline_factor;
 
             long totalWorkload = 0;
+            double utilizationOnEdge = SimSettings.getInstance().getWorkflows()[randomWorkflowType].getWorkflowProperties()[4];
             ArrayList<TaskProperty> taskList = new ArrayList<>();
             for (int k = 0; k < SimSettings.getInstance().getWorkflows()[randomWorkflowType].getTasks().length; k++) {
                 long dataInputSize = (long) SimSettings.getInstance().getWorkflows()[randomWorkflowType].getTasks()[k].getTaskNodeProperties()[0];
@@ -95,10 +96,18 @@ public class WorkflowLoadGenerator extends LoadGeneratorModel {
                         i,
                         randomWorkflowType,
                         1, // Assuming 1 PEs for simplicity, can be adjusted
+<<<<<<< HEAD
                         taskLength, // Length
                         dataInputSize, // Input file size
                         dataOutputSize,  // Output file size
                         k
+=======
+                        (long) expRngList[randomWorkflowType].get(k)[0].sample() + 90, // Length
+                        (long) expRngList[randomWorkflowType].get(k)[1].sample(), // Input file size
+                        (long) expRngList[randomWorkflowType].get(k)[2].sample(),  // Output file size
+                        k,
+                        utilizationOnEdge
+>>>>>>> b44455b (Major bugfixes in communication logic and event handling)
                 );
                 taskList.add(taskProperty);
                 totalWorkload += taskProperty.getLength();

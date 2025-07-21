@@ -95,6 +95,7 @@ public class AuctionSimManager extends SimManager {
             synchronized (this) {
                 try {
                     WorkflowProperty workflow = (WorkflowProperty) ev.getData();
+                    mobileDeviceManager.setupWorkflowList();
                     mobileDeviceManager.processWorkflow(workflow);
                     mobileDeviceManager.setupMobileDeviceArrival(workflow);
                 } catch (Exception e) {

@@ -33,4 +33,6 @@ public abstract class MobileDeviceManager  extends DatacenterBroker {
 	public abstract void submitTask(TaskProperty edgeTask, int preference, int taskAppId);
 
 	public abstract void setupMobileDeviceArrival(WorkflowProperty edgeWorkflow);
+
+	public void setupWorkflowList() {}
 }

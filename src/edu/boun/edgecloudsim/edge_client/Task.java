@@ -28,18 +28,31 @@ public class Task extends Cloudlet {
 	private boolean last = false; //keeps track of the end of an application's DAG
 	private int AppId;
 	private int taskAppId;
+	private double utilizationOnEdge;
+
+	public double getUtilizationOnEdge() {
+		return utilizationOnEdge;
+	}
+
+
+	public void setUtilizationOnEdge(double utilizationOnEdge) {
+		this.utilizationOnEdge = utilizationOnEdge;
+	}
+
 
 	public Task(int _mobileDeviceId, int cloudletId, long cloudletLength, int pesNumber,
 			long cloudletFileSize, long cloudletOutputSize,
 			UtilizationModel utilizationModelCpu,
 			UtilizationModel utilizationModelRam,
-			UtilizationModel utilizationModelBw) {
+			UtilizationModel utilizationModelBw,
+			double _utilizationOnEdge) {
 		super(cloudletId, cloudletLength, pesNumber, cloudletFileSize,
 				cloudletOutputSize, utilizationModelCpu, utilizationModelRam,
 				utilizationModelBw);
 		
 		mobileDeviceId = _mobileDeviceId;
 		creationTime = CloudSim.clock();
+		utilizationOnEdge = _utilizationOnEdge;
 	}
 
 	

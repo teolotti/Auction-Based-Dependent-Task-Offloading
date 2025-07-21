@@ -24,7 +24,8 @@ public class WorkflowProperty {
     private double PredictedMakespan;
     private ArrayList<Integer> initialTaskIds;
     private ArrayList<Integer> finalTaskIds;
-    private long totalWorkload;
+    private ArrayList<Integer> completedTasks;
+   	private long totalWorkload;
 
 
 
@@ -40,6 +41,7 @@ public class WorkflowProperty {
         this.uploadSize = uploadSize;
         this.downloadSize = downloadSize;
         computeInitialAndFinalTaskIds();
+        this.completedTasks = new ArrayList<>();
         this.totalWorkload = totalWorkload; 
     }
 
@@ -137,6 +139,15 @@ public class WorkflowProperty {
     public ArrayList<Integer> getFinalTaskIds() {
         return finalTaskIds;
     }
+    
+    public ArrayList<Integer> getTasksDependingOnTask(int taskAppId){
+    	ArrayList<Integer> dependentTasks = new ArrayList<>();
+    	for(int i = 0; i < taskList.size(); i++) {
+    		if(dependencyMatrix[taskAppId][i] > 0)
+    			dependentTasks.add(i);
+    	}
+    	return dependentTasks;
+    }
 
 
     private void computeInitialAndFinalTaskIds() {
@@ -161,20 +172,38 @@ public class WorkflowProperty {
 		this.totalWorkload = totalWorkload;
 	}
 	
-	public int getPreferredDatacenterForTask(int appId) {
+	public int getPreferredDatacenterForTask(int taskAppId) {
 		int preferredIndex = -1;
 		for(Map.Entry<Integer, List<Boolean>> entry : personalBooleanMappings.entrySet()) {
-			if (entry.getValue().get(appId))
+			if (entry.getValue().get(taskAppId))
 				return entry.getKey();
 		}
 		return preferredIndex;
 	}
 	
+	public ArrayList<Integer> getUnlockableTasks(int taskAppId){
+		ArrayList<Integer> unlockable = new ArrayList<>();
+		for(int i = 0; i < taskList.size(); i++) {
+			if(dependencyMatrix[taskAppId][i] > 0)
+				unlockable.add(i);
+		}
+		return unlockable;
+	}
+	
 	public boolean removeFinalTaskIndex(int index) {
 		if(finalTaskIds.contains(index)) {
+			if(finalTaskIds.indexOf(index) != -1)
 			finalTaskIds.remove(finalTaskIds.indexOf(index));
 			return true;
 		}
 		return false;
+	}
+	
+	 public ArrayList<Integer> getCompletedTasks() {
+			return completedTasks;
+		}
+	
+	public void markCompleted(int taskAppId) {
+		completedTasks.add(taskAppId);
 	}
 }

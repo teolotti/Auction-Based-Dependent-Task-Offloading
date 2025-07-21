@@ -227,13 +227,13 @@ public class SimManager extends SimEntity {
 				}
 				break;
 			case GET_LOAD_LOG:
-				SimLogger.getInstance().addVmUtilizationLog(
+				/*SimLogger.getInstance().addVmUtilizationLog(
 						CloudSim.clock(),
 						edgeServerManager.getAvgUtilization(),
 						cloudServerManager.getAvgUtilization(),
 						mobileServerManager.getAvgUtilization());
 				
-				schedule(getId(), SimSettings.getInstance().getVmLoadLogInterval(), GET_LOAD_LOG);
+				schedule(getId(), SimSettings.getInstance().getVmLoadLogInterval(), GET_LOAD_LOG);*/
 				break;
 			case PRINT_PROGRESS:
 				int progress = (int)((CloudSim.clock()*100)/SimSettings.getInstance().getSimulationTime());
