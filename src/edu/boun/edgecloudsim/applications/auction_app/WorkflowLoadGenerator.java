@@ -24,17 +24,17 @@ public class WorkflowLoadGenerator extends LoadGeneratorModel {
         // for generating workflow tasks.
         workflowList = new ArrayList<WorkflowProperty>();
         // Initialize the exponential distribution as an array of Lists of ExponentialDistribution
-        ArrayList<ExponentialDistribution[]>[] expRngList = new ArrayList[SimSettings.getInstance().getWorkflows().length];
-        for (int i = 0; i < expRngList.length; i++) {
-            expRngList[i] = new ArrayList<>();
-            for(int k = 0; k < SimSettings.getInstance().getWorkflows()[i].getTasks().length; k++){
-                ExponentialDistribution[] distributions = new ExponentialDistribution[3];
-                for (int j = 0; j < 3; j++) {
-                    distributions[j] = new ExponentialDistribution(SimSettings.getInstance().getWorkflows()[i].getTasks()[k].getTaskNodeProperties()[j]); // Sostituisci 1.0 con il parametro desiderato
-                }
-                expRngList[i].add(distributions);
-            }
-        }
+//        ArrayList<ExponentialDistribution[]>[] expRngList = new ArrayList[SimSettings.getInstance().getWorkflows().length];
+//        for (int i = 0; i < expRngList.length; i++) {
+//            expRngList[i] = new ArrayList<>();
+//            for(int k = 0; k < SimSettings.getInstance().getWorkflows()[i].getTasks().length; k++){
+//                ExponentialDistribution[] distributions = new ExponentialDistribution[3];
+//                for (int j = 0; j < 3; j++) {
+//                    distributions[j] = new ExponentialDistribution(SimSettings.getInstance().getWorkflows()[i].getTasks()[k].getTaskNodeProperties()[j]); // Sostituisci 1.0 con il parametro desiderato
+//                }
+//                expRngList[i].add(distributions);
+//            }
+//        }
         // Valuta se servono distribuzioni esponenziali per input/output file size e task length oppure no
 
 
@@ -86,15 +86,18 @@ public class WorkflowLoadGenerator extends LoadGeneratorModel {
             long totalWorkload = 0;
             ArrayList<TaskProperty> taskList = new ArrayList<>();
             for (int k = 0; k < SimSettings.getInstance().getWorkflows()[randomWorkflowType].getTasks().length; k++) {
+                long dataInputSize = (long) SimSettings.getInstance().getWorkflows()[randomWorkflowType].getTasks()[k].getTaskNodeProperties()[0];
+                long dataOutputSize = (long) SimSettings.getInstance().getWorkflows()[randomWorkflowType].getTasks()[k].getTaskNodeProperties()[1];
+                long taskLength = (long) SimSettings.getInstance().getWorkflows()[randomWorkflowType].getTasks()[k].getTaskNodeProperties()[2];
                 // Create tasks for the workflow
                 TaskProperty taskProperty = new TaskProperty(
                         virtualTime,
                         i,
                         randomWorkflowType,
                         1, // Assuming 1 PEs for simplicity, can be adjusted
-                        (long) expRngList[randomWorkflowType].get(k)[0].sample(), // Length
-                        (long) expRngList[randomWorkflowType].get(k)[1].sample(), // Input file size
-                        (long) expRngList[randomWorkflowType].get(k)[2].sample(),  // Output file size
+                        taskLength, // Length
+                        dataInputSize, // Input file size
+                        dataOutputSize,  // Output file size
                         k
                 );
                 taskList.add(taskProperty);
