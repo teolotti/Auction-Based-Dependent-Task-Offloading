@@ -129,30 +129,6 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 	protected void processCloudletReturn(SimEvent ev) {
 		NetworkModel networkModel = SimManager.getInstance().getNetworkModel();
 		Task task = (Task) ev.getData();
-		int vmId = task.getAssociatedVmId();
-
-	    // find the same VM & scheduler
-	    Vm chosenVm = null;
-	    for (Vm v : SimManager.getInstance()
-	                          .getEdgeServerManager()
-	                          .getVmList(vmId)) {
-	        if (v.getId() == vmId) {
-	            chosenVm = v; break;
-	        }
-	    }
-	    CloudletScheduler scheduler = chosenVm.getCloudletScheduler();
-
-	    // print the after‐state
-	    System.out.printf(
-	      "[%.3f] RETURN cloudlet#%d from VM=%d  |  exec=%d waiting=%d  waited=%.3f execTime=%.3f%n",
-	      CloudSim.clock(),
-	      task.getCloudletId(),
-	      vmId,
-	      scheduler.getCloudletExecList().size(),
-	      scheduler.getCloudletWaitingList().size(),
-	      task.getWaitingTime(),
-	      task.getActualCPUTime()
-	    );
 		
 		SimLogger.getInstance().taskExecuted(task.getCloudletId());
 
@@ -652,40 +628,6 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 	private void submitTaskToVm(Task task, SimSettings.VM_TYPES vmType) {
 		//SimLogger.printLine(CloudSim.clock() + ": Cloudlet#" + task.getCloudletId() + " is submitted to VM#" + task.getVmId());
 		schedule(getVmsToDatacentersMap().get(task.getVmId()), 0, CloudSimTags.CLOUDLET_SUBMIT, task);
-
-		int vmId = task.getAssociatedVmId();
-	    int dcId = getVmsToDatacentersMap().get(vmId);
-
-	    // 1) Find the Vm object by ID
-	    Vm chosenVm = null;
-	    // your orchestrator holds the global VM list:
-	    for (Vm v : SimManager.getInstance()
-	                          .getEdgeServerManager()
-	                          .getVmList(vmId)) {
-	        if (v.getId() == vmId) {
-	            chosenVm = v;
-	            break;
-	        }
-	    }
-	    if (chosenVm == null) {
-	        System.err.println("ERROR: VM#" + vmId + " not found!");
-	        return;
-	    }
-
-	    // 2) Now grab its scheduler
-	    CloudletScheduler scheduler = chosenVm.getCloudletScheduler();
-
-	    // 3) Print the before‐state
-	    System.out.printf(
-	      "[%.3f] SUBMIT cloudlet#%d (len=%d) → DC=%d, VM=%d  |  exec=%d waiting=%d%n",
-	      CloudSim.clock(),
-	      task.getCloudletId(),
-	      task.getCloudletLength(),
-	      dcId,
-	      vmId,
-	      scheduler.getCloudletExecList().size(),
-	      scheduler.getCloudletWaitingList().size()
-	    );
 		
 		SimLogger.getInstance().taskAssigned(task.getCloudletId(),
 				task.getAssociatedDatacenterId(),

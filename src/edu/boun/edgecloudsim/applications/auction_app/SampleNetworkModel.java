@@ -28,8 +28,8 @@ import org.cloudbus.cloudsim.core.CloudSim;
 public class SampleNetworkModel extends NetworkModel {
 	public static enum NETWORK_TYPE {WLAN, LAN};
 	public static enum LINK_TYPE {DOWNLOAD, UPLOAD};
-	public static double MAN_BW = SimSettings.getInstance().getManBandwidth(); //Kbps
-	public static double WLAN_BW = SimSettings.getInstance().getWlanBandwidth(); //Kbps
+	public static double MAN_BW = SimSettings.getInstance().getManBandwidth(); //Mbps
+	public static double WLAN_BW = SimSettings.getInstance().getWlanBandwidth(); //Mbps
 
 	@SuppressWarnings("unused")
 	private int manClients;
@@ -377,7 +377,7 @@ public class SampleNetworkModel extends NetworkModel {
 		avgTaskSize = avgTaskSize * 8; //convert from KB to Kb
 
         lamda = ((double)1/(double)PoissonMean); //task per seconds
-		mu = bandwidth /*Kbps*/ / avgTaskSize /*Kb*/; //task per seconds
+		mu = bandwidth * 1024 /*convert to Kbps*/ / avgTaskSize /*Kb*/; //task per seconds
 		double result = (double)1 / (mu-lamda*(double)deviceCount);
 		
 		if(result < 0)
