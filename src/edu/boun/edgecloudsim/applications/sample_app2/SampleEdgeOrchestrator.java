@@ -60,7 +60,7 @@ public class SampleEdgeOrchestrator extends EdgeOrchestrator {
 		}
 		else if(simScenario.equals("TWO_TIER_WITH_EO")){
 			//dummy task to simulate a task with 1 Mbit file size to upload and download 
-			Task dummyTask = new Task(0, 0, 0, 0, 128, 128, new UtilizationModelFull(), new UtilizationModelFull(), new UtilizationModelFull());
+			Task dummyTask = new Task(0, 0, 0, 0, 128, 128, new UtilizationModelFull(), new UtilizationModelFull(), new UtilizationModelFull(), 0);
 			
 			double wanDelay = SimManager.getInstance().getNetworkModel().getUploadDelay(task.getMobileDeviceId(),
 					SimSettings.CLOUD_DATACENTER_ID, dummyTask /* 1 Mbit */);

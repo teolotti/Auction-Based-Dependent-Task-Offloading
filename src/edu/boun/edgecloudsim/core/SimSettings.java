@@ -774,6 +774,7 @@ public class SimSettings {
 			edgeDevicesDoc.getDocumentElement().normalize();
 
 			NodeList datacenterList = edgeDevicesDoc.getElementsByTagName("datacenter");
+			int totalMips = 0;
 			for (int i = 0; i < datacenterList.getLength(); i++) {
 				NUM_OF_EDGE_DATACENTERS++;
 				Node datacenterNode = datacenterList.item(i);
@@ -799,7 +800,7 @@ public class SimSettings {
 					NUM_OF_PLACE_TYPES = placeTypeIndex+1;
 
 				NodeList hostList = datacenterElement.getElementsByTagName("host");
-				int totalMips = 0;
+
 				for (int j = 0; j < hostList.getLength(); j++) {
 					NUM_OF_EDGE_HOSTS++;
 					Node hostNode = hostList.item(j);
@@ -826,12 +827,13 @@ public class SimSettings {
 						totalMips += Integer.parseInt(vmElement.getElementsByTagName("mips").item(0).getTextContent());
 					}
 				}
-				if (totalMips > 0) {
-					// set MIPS for edge VMs
-					MIPS_FOR_EDGE_VM = totalMips / NUM_OF_EDGE_VMS;
-				} else {
-					MIPS_FOR_EDGE_VM = 1000; // default value if no VMs are defined
-				}
+
+			}
+			if (totalMips > 0) {
+				// set MIPS for edge VMs
+				MIPS_FOR_EDGE_VM = totalMips / NUM_OF_EDGE_VMS;
+			} else {
+				MIPS_FOR_EDGE_VM = 1000; // default value if no VMs are defined
 			}
 
 		} catch (Exception e) {

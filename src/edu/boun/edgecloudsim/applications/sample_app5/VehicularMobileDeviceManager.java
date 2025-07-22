@@ -565,7 +565,7 @@ public class VehicularMobileDeviceManager extends MobileDeviceManager {
 		Task task = new Task(edgeTask.getMobileDeviceId(), ++taskIdCounter,
 				edgeTask.getLength(), edgeTask.getPesNumber(),
 				edgeTask.getInputFileSize(), edgeTask.getOutputFileSize(),
-				utilizationModelCPU, utilizationModel, utilizationModel);
+				utilizationModelCPU, utilizationModel, utilizationModel, 0);
 
 		//set the owner of this task
 		task.setUserId(this.getId());

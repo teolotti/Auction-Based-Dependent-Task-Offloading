@@ -937,10 +937,10 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		double maxFinish = 0.0;
 		for (List<TaskAssignmentInfo> assignments : personalMappings.values()) {
 		    for (TaskAssignmentInfo assignment : assignments) {
-		        if (assignment.getPredictedStartTime() < minStart) {
+		        if (assignment.getPredictedStartTime() < minStart && assignment.isAssigned()) {
 		            minStart = assignment.getPredictedStartTime();
 		        }
-		        if (assignment.getPredictedFinishTime() > maxFinish) {
+		        if (assignment.getPredictedFinishTime() > maxFinish && assignment.isAssigned()) {
 		            maxFinish = assignment.getPredictedFinishTime();
 		        }
 		    }

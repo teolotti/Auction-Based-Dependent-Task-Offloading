@@ -88,7 +88,7 @@ public class VehicularLoadGenerator extends LoadGeneratorModel{
 				outputFileSize = SimUtils.getRandomLongNumber(outputFileSize - outputFileSizeBias, outputFileSize + outputFileSizeBias);
 				length = SimUtils.getRandomLongNumber(length - lengthBias, length + lengthBias);
 
-				taskList.add(new TaskProperty(virtualTime, i, randomTaskType, pesNumber, length, inputFileSize, outputFileSize));
+				taskList.add(new TaskProperty(virtualTime, i, randomTaskType, pesNumber, length, inputFileSize, outputFileSize, 0));
 			}
 		}
 	}
