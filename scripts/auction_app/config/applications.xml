@@ -5,7 +5,7 @@
 		<prob_cloud_selection>20</prob_cloud_selection>
 		<poisson_interarrival>0.2</poisson_interarrival>
 		<delay_sensitivity>0</delay_sensitivity>
-		<vm_utilization_on_edge>10</vm_utilization_on_edge>
+		<vm_utilization_on_edge>100</vm_utilization_on_edge>
 		<vm_utilization_on_cloud>1</vm_utilization_on_cloud>
 		<vm_utilization_on_mobile>0</vm_utilization_on_mobile>
 		<deadline_factor>6</deadline_factor>
@@ -114,7 +114,7 @@
 		<prob_cloud_selection>20</prob_cloud_selection>
 		<poisson_interarrival>0.2</poisson_interarrival>
 		<delay_sensitivity>0</delay_sensitivity>
-		<vm_utilization_on_edge>10</vm_utilization_on_edge>
+		<vm_utilization_on_edge>100</vm_utilization_on_edge>
 		<vm_utilization_on_cloud>1</vm_utilization_on_cloud>
 		<vm_utilization_on_mobile>0</vm_utilization_on_mobile>
 		<deadline_factor>16</deadline_factor>
@@ -229,7 +229,7 @@
 		<prob_cloud_selection>20</prob_cloud_selection>
 		<poisson_interarrival>0.2</poisson_interarrival>
 		<delay_sensitivity>0</delay_sensitivity>
-		<vm_utilization_on_edge>10</vm_utilization_on_edge>
+		<vm_utilization_on_edge>100</vm_utilization_on_edge>
 		<vm_utilization_on_cloud>1</vm_utilization_on_cloud>
 		<vm_utilization_on_mobile>0</vm_utilization_on_mobile>
 		<deadline_factor>6</deadline_factor>
