@@ -26,6 +26,7 @@ public class WorkflowProperty {
     private ArrayList<Integer> finalTaskIds;
     private ArrayList<Integer> completedTasks;
    	private long totalWorkload;
+   	private boolean failed = false;
 
 
 
@@ -205,5 +206,13 @@ public class WorkflowProperty {
 	
 	public void markCompleted(int taskAppId) {
 		completedTasks.add(taskAppId);
+	}
+
+	public boolean isFailed() {
+		return failed;
+	}
+
+	public void setFailed(boolean failed) {
+		this.failed = failed;
 	}
 }

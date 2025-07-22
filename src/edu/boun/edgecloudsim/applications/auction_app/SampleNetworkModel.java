@@ -231,7 +231,7 @@ public class SampleNetworkModel extends NetworkModel {
 		
 		//special case for man communication
 		if(sourceDeviceId == destDeviceId && sourceDeviceId == SimSettings.GENERIC_EDGE_DEVICE_ID){
-			return delay = getManUploadDelay();
+			return delay = getManUploadDelay(task.getCloudletFileSize());
 		}
 		
 		Location accessPointLocation = SimManager.getInstance().getMobilityModel().getLocation(sourceDeviceId,CloudSim.clock());
@@ -257,7 +257,7 @@ public class SampleNetworkModel extends NetworkModel {
 		
 		//special case for man communication
 		if(sourceDeviceId == destDeviceId && sourceDeviceId == SimSettings.GENERIC_EDGE_DEVICE_ID){
-			return delay = getManDownloadDelay();
+			return delay = getManDownloadDelay(task.getCloudletOutputSize());
 		}
 		
 		Location accessPointLocation = SimManager.getInstance().getMobilityModel().getLocation(destDeviceId,CloudSim.clock());
@@ -388,12 +388,15 @@ public class SampleNetworkModel extends NetworkModel {
 		return (result > 15) ? 0 : result;
 	}
 	
-	private double getManDownloadDelay() {
-		double result = calculateMM1(SimSettings.getInstance().getInternalLanDelay(),
-				MAN_BW,
-				ManPoissonMeanForDownload,
-				avgManTaskOutputSize,
-				numberOfMobileDevices);
+	private double getManDownloadDelay(double dataSize) {
+		double taskSizeInKb = dataSize * (double)8; //KB to Kb
+		double result=0;
+		
+		result = taskSizeInKb / MAN_BW; //seconds
+		if (result < 1e-3)
+			result = 1e-3; //minimum delay is 1 ms
+		if (result > 1e-2)
+			result = 1e-2; //maximum delay is 10 ms
 		
 		totalManTaskOutputSize += avgManTaskOutputSize;
 		numOfManTaskForDownload++;
@@ -403,12 +406,15 @@ public class SampleNetworkModel extends NetworkModel {
 		return result;
 	}
 	
-	private double getManUploadDelay() {
-		double result = calculateMM1(SimSettings.getInstance().getInternalLanDelay(),
-				MAN_BW,
-				ManPoissonMeanForUpload,
-				avgManTaskInputSize,
-				numberOfMobileDevices);
+	private double getManUploadDelay(double dataSize) {
+		double taskSizeInKb = dataSize * (double)8; //KB to Kb
+		double result=0;
+		
+		result = taskSizeInKb / MAN_BW; //seconds
+		if (result < 1e-3)
+			result = 1e-3; //minimum delay is 1 ms
+		if (result > 1e-2)
+			result = 1e-2; //maximum delay is 10 ms
 		
 		totalManTaskInputSize += avgManTaskInputSize;
 		numOfManTaskForUpload++;

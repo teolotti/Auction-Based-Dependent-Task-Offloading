@@ -19,8 +19,10 @@ import org.cloudbus.cloudsim.core.CloudSim;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Map;
 
 public class MainApp {
 
@@ -119,6 +121,23 @@ public class MainApp {
 					now = df.format(ScenarioEndDate);
 					SimLogger.printLine("Scenario finished at " + now +  ". It took " + SimUtils.getTimeDifference(ScenarioStartDate,ScenarioEndDate));
 					SimLogger.printLine("----------------------------------------------------------------------");
+					SampleMobileDeviceManager deviceManager = (SampleMobileDeviceManager)SimManager.getInstance().getMobileDeviceManager();
+					ArrayList<Double> makespans = deviceManager.getMakespans();
+					Map<Integer, Double> valuations = deviceManager.getValuations();
+					Map<Integer, Double> payments = deviceManager.getValuations();
+					double successRate = deviceManager.getSuccessPercentage();
+					double avgMakespan = 0;
+					for(Double makespan : makespans) {
+						avgMakespan += makespan;
+					}
+					avgMakespan /= j;
+					double totalValuation = 0;
+					for(Map.Entry<Integer, Double> entry : valuations.entrySet()) {
+						totalValuation += entry.getValue();
+					}
+					System.out.printf("Success rate : %f\nAverage Makespan : %f\nTotal Valuation: %f\n", successRate, avgMakespan, totalValuation);
+					System.out.printf("Retired: %d\n", deviceManager.getRetired());
+					
 				}//End of orchestrators loop
 			}//End of scenarios loop
 		}//End of mobile devices loop

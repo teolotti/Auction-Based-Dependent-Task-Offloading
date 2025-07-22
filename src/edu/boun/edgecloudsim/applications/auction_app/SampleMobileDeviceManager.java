@@ -78,6 +78,10 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 	
 	private int completed = 0;
 	private int failed = 0;
+	private int retired = 0;
+	private int auctionsNumberFromArrivals = 0;
+	private int auctionsNumberFromQueues = 0;
+	private int auctionsNumberFromCompletions = 0;
 
 	private  Deque<Request> reqQueue = new ArrayDeque<>();
 	private  int auctionTodoCounter = 0;
@@ -87,7 +91,10 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 
 	private ArrayList<WorkflowProperty> workflowList = null;
 	private Map<Integer, AppDependencies> appDependenciesList = new HashMap<>();
-
+	
+	private ArrayList<Double> makespans = new ArrayList<>();
+	private Map<Integer, Double> valuations = new HashMap<>();
+	private Map<Integer, Double> payments = new HashMap<>();
 	
 	
 	public SampleMobileDeviceManager() throws Exception{
@@ -119,6 +126,22 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		//do nothing!
 	}
 	
+	public ArrayList<Double> getMakespans() {
+		return makespans;
+	}
+
+	public Map<Integer, Double> getValuations() {
+		return valuations;
+	}
+
+	public Map<Integer, Double> getPayments() {
+		return payments;
+	}
+	
+	public double getSuccessPercentage() {
+		return (double)completed/(double)workflowList.size();
+	}
+	
 	/**
 	 * Process a cloudlet return event.
 	 * 
@@ -131,6 +154,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		Task task = (Task) ev.getData();
 		
 		SimLogger.getInstance().taskExecuted(task.getCloudletId());
+		
 
 		if(task.getAssociatedDatacenterId() == SimSettings.CLOUD_DATACENTER_ID){
 			//SimLogger.printLine(CloudSim.clock() + ": " + getName() + ": task #" + task.getCloudletId() + " received from cloud");
@@ -170,49 +194,61 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 					getEdgeServerManager().
 					getDatacenterList().get(task.getAssociatedHostId()).
 					getHostList().get(0)).getVmList().get(0));
-			if(vm.getCloudletScheduler().getCloudletExecList().isEmpty())//if edge device queue is empty, fill it
-				schedule(getId(), 0.0, RUN_AUCTION);
-			WorkflowProperty workflow = workflowList.get(task.getMobileDeviceId());
-			ArrayList<Integer> finalTaskIds = new ArrayList<>();
-			finalTaskIds = workflow.getFinalTaskIds();
-			workflow.removeFinalTaskIndex(task.getTaskAppId());
-			workflow.markCompleted(task.getTaskAppId());
-			if(!finalTaskIds.contains(task.getTaskAppId()))
-				schedule(getId(), 0.0, SEND_RESULTS_TO_UNLOCKABLE_TASKS, task);
-		
 			
-			//if no last task left, conclude, send to the mobile device and schedule an auction
-			if(finalTaskIds.isEmpty()) {
-				System.out.println("completati: " + ++completed);
-				//if neighbor edge device is selected
-				if(host.getLocation().getServingWlanId() != task.getSubmittedLocation().getServingWlanId())
-				{
-					delay = networkModel.getDownloadDelay(SimSettings.GENERIC_EDGE_DEVICE_ID, SimSettings.GENERIC_EDGE_DEVICE_ID, task);
-					nextEvent = RESPONSE_RECEIVED_BY_EDGE_DEVICE_TO_RELAY_MOBILE_DEVICE;
-					nextDeviceForNetworkModel = SimSettings.GENERIC_EDGE_DEVICE_ID + 1;
-					delayType = NETWORK_DELAY_TYPES.MAN_DELAY;
-				}
+			WorkflowProperty workflow = workflowList.get(task.getMobileDeviceId());
+			if(CloudSim.clock() >= workflow.getDeadline()) {
+				workflow.setFailed(true);
+				failed++;
+				//System.out.println("failed: " + failed);
+			}
+			if(!workflow.isFailed()) {
+				ArrayList<Integer> finalTaskIds = new ArrayList<>();
+				finalTaskIds = workflow.getFinalTaskIds();
+				workflow.removeFinalTaskIndex(task.getTaskAppId());
+				workflow.markCompleted(task.getTaskAppId());
+				if(!finalTaskIds.contains(task.getTaskAppId()))
+					schedule(getId(), 0.0, SEND_RESULTS_TO_UNLOCKABLE_TASKS, task);
+				if(vm.getCloudletScheduler().getCloudletExecList().isEmpty())//if edge device queue is empty, fill it
+					schedule(getId(), 0.0, RUN_AUCTION);
+				auctionsNumberFromQueues++;
 				
-				if(delay > 0)
-				{
-					Location currentLocation = SimManager.getInstance().getMobilityModel().getLocation(task.getMobileDeviceId(),CloudSim.clock()+delay);
-					if(task.getSubmittedLocation().getServingWlanId() == currentLocation.getServingWlanId())
+				//if no last task left, conclude, send to the mobile device and schedule an auction
+				if(finalTaskIds.isEmpty()) {
+					++completed;
+					//System.out.println("completati: " + ++completed);
+					//if neighbor edge device is selected
+					if(host.getLocation().getServingWlanId() != task.getSubmittedLocation().getServingWlanId())
 					{
-						networkModel.downloadStarted(currentLocation, nextDeviceForNetworkModel);
-						SimLogger.getInstance().setDownloadDelay(task.getCloudletId(), delay, delayType);
-						
-						schedule(getId(), delay, nextEvent, task);
+						delay = networkModel.getDownloadDelay(SimSettings.GENERIC_EDGE_DEVICE_ID, SimSettings.GENERIC_EDGE_DEVICE_ID, task);
+						nextEvent = RESPONSE_RECEIVED_BY_EDGE_DEVICE_TO_RELAY_MOBILE_DEVICE;
+						nextDeviceForNetworkModel = SimSettings.GENERIC_EDGE_DEVICE_ID + 1;
+						delayType = NETWORK_DELAY_TYPES.MAN_DELAY;
+					}
+					
+					if(delay > 0)
+					{
+						Location currentLocation = SimManager.getInstance().getMobilityModel().getLocation(task.getMobileDeviceId(),CloudSim.clock()+delay);
+						if(task.getSubmittedLocation().getServingWlanId() == currentLocation.getServingWlanId())
+						{
+							networkModel.downloadStarted(currentLocation, nextDeviceForNetworkModel);
+							SimLogger.getInstance().setDownloadDelay(task.getCloudletId(), delay, delayType);
+							
+							schedule(getId(), delay, nextEvent, task);
+						}
+						else
+						{
+							SimLogger.getInstance().failedDueToMobility(task.getCloudletId(), CloudSim.clock());
+						}
 					}
 					else
 					{
-						SimLogger.getInstance().failedDueToMobility(task.getCloudletId(), CloudSim.clock());
+						SimLogger.getInstance().failedDueToBandwidth(task.getCloudletId(), CloudSim.clock(), delayType);
 					}
+					schedule(getId(), 0.0, RUN_AUCTION);//run auction when an app is completed
+					auctionsNumberFromCompletions++;
+				}else {
+					SimLogger.getInstance().taskEnded(task.getCloudletId(), CloudSim.clock());
 				}
-				else
-				{
-					SimLogger.getInstance().failedDueToBandwidth(task.getCloudletId(), CloudSim.clock(), delayType);
-				}
-				schedule(getId(), 0.0, RUN_AUCTION);//run auction when an app is completed
 			}else {
 				SimLogger.getInstance().taskEnded(task.getCloudletId(), CloudSim.clock());
 			}
@@ -245,6 +281,17 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 			case REQUEST_RECEIVED_BY_EDGE_DEVICE:
 			{
 				Task task = (Task) ev.getData();
+				WorkflowProperty workflow = workflowList.get(task.getMobileDeviceId());
+				if(CloudSim.clock() >= workflow.getDeadline()) {
+					setFailed(getFailed() + 1);
+					failed++;
+					//System.out.println("failed: " + failed);
+					workflow.setFailed(true);
+				}
+				if(workflow.isFailed()) {
+					SimLogger.getInstance().taskEnded(task.getCloudletId(), CloudSim.clock());
+					break;
+				}
 				networkModel.uploadFinished(task.getSubmittedLocation(), SimSettings.GENERIC_EDGE_DEVICE_ID);
 				//if task is unlocked, submit it
 				ArrayList<Integer> unlockedTasks = appDependenciesList.get(task.getMobileDeviceId()).checkForUnlockedTasks();
@@ -265,7 +312,6 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 				Task task = (Task) ev.getData();
 				networkModel.uploadFinished(task.getSubmittedLocation(), SimSettings.GENERIC_EDGE_DEVICE_ID+1);
 				submitTaskToVm(task, SimSettings.VM_TYPES.EDGE_VM);
-				
 				break;
 			}
 			case REQUEST_RECEIVED_BY_EDGE_DEVICE_TO_RELAY_NEIGHBOR:
@@ -323,6 +369,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 			case RESPONSE_RECEIVED_BY_MOBILE_DEVICE:
 			{
 				Task task = (Task) ev.getData();
+				WorkflowProperty workflow = workflowList.get(task.getMobileDeviceId());
 				
 				if(task.getAssociatedDatacenterId() == SimSettings.CLOUD_DATACENTER_ID)
 					networkModel.downloadFinished(task.getSubmittedLocation(), SimSettings.CLOUD_DATACENTER_ID);
@@ -330,11 +377,15 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 					networkModel.downloadFinished(task.getSubmittedLocation(), SimSettings.GENERIC_EDGE_DEVICE_ID);
 				
 				SimLogger.getInstance().taskEnded(task.getCloudletId(), CloudSim.clock());
+				//collect workflow makespan
+				double makespan = task.getFinishTime() - workflow.getStartTime();
+				makespans.add(makespan);
 				break;
 			}
 			case ENQUEUE_REQ:
 			{
-				WorkflowProperty workflow = (WorkflowProperty) ev.getData();		
+				WorkflowProperty workflow = (WorkflowProperty) ev.getData();
+				//System.out.println("Arrived workflow " + workflow.getMobileDeviceId());
 				
 				Task dummyTask = new Task (workflow.getMobileDeviceId(), -1, 0, 1, workflow.getUploadSize(), workflow.getDownloadSize(), null, null, null, 0);
 				
@@ -343,9 +394,11 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 				double downloadCost = networkModel.getDownloadDelay(SimSettings.GENERIC_EDGE_DEVICE_ID, workflow.getMobileDeviceId(), dummyTask);
 
 				double processingEstimated = workflow.getPredictedMakespan() + uploadCost + downloadCost;
-				if(CloudSim.clock() + processingEstimated > workflow.getDeadline())//handle failure of workflow here
+				if(CloudSim.clock() + processingEstimated > workflow.getDeadline()){//handle failure of workflow here
+					retired++;
+					//System.out.println("retired as of now: " + ++retired);
 					break;
-				
+				}
 				double maxUnitCost = SimManager.getInstance().getEdgeServerManager().getMaxCost();
 				double minMips = SimManager.getInstance().getEdgeServerManager().getMinMips();
 				double bid = decideBid(workflow.getTotalWorkload(), maxUnitCost, minMips);
@@ -357,10 +410,13 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 				appDependenciesList.put(workflow.getMobileDeviceId(), dependencies);
 
 				reqQueue.add(request);
-				if(!auctionRunning)
-					schedule(getId(), 0.001, RUN_AUCTION);
+				//System.out.println("request queue size: " + reqQueue.size());
+				if(!auctionRunning) {
+					schedule(getId(), 0.01, RUN_AUCTION);
+				}
 				else
 					auctionTodoCounter++;
+				auctionsNumberFromArrivals++;
 				break;
 			}
 			case RUN_AUCTION:
@@ -370,29 +426,43 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 				auctionRunning = true;
 				AuctionResult winnerData = ((SampleEdgeOrchestrator)SimManager.getInstance().getEdgeOrchestrator()).auction(reqQueue);
 				Request winner = null;
-				double auctionTime = (double) reqQueue.size() * Math.log((double) reqQueue.size()) * 0.001;
+				double auctionTime = (double) reqQueue.size() * Math.log((double) reqQueue.size()) * 0.01 + 0.1;
 				for(Request request : reqQueue) {
-					if(winnerData.getWinnerId() == request.getId()) //FIXME: check this if clause
+					if(winnerData.getWinnerId() == request.getId()) {
 						winner = request;
-						reqQueue.remove(request);
+					}
 				}
-				//Payment needs to be saved (data file with all the stats seems best solution here)
 				
-				if(winner != null)
+				double valuation = winner.getBid();
+				double payment = winnerData.getPayment();
+				valuations.put(winnerData.getWinnerId(), valuation);
+				payments.put(winnerData.getWinnerId(), payment);
+				//System.out.println("winner: " + winner.getId());
+				
+				if(winner != null) {
 					schedule(getId(), auctionTime, AUCTION_RESULT, winner);
+					reqQueue.remove(winner);
+				}
 				else
 					SimLogger.printLine("Winner not found");
 				break;
 			}
 			case AUCTION_RESULT:
 			{
-				if(auctionTodoCounter > 0) {
+				if(auctionTodoCounter > 0 && reqQueue.size() > 0) {
 					auctionTodoCounter--;
 					schedule(getId(), 0.0, RUN_AUCTION);
 				}
 				auctionRunning = false;
 				Request winner = (Request) ev.getData();
 				WorkflowProperty workflow = winner.getWorkflow();
+				if(CloudSim.clock() >= workflow.getDeadline()) {
+					workflow.setFailed(true);
+					failed++;
+					//System.out.println("failed: " + failed);
+					setFailed(getFailed() + 1);
+					break;
+				}
 				ArrayList<Integer> firsts = workflowList.get(workflow.getMobileDeviceId()).getInitialTaskIds();
 				//submit the first tasks of the winner using an indexed list
 				ArrayList<TaskProperty> tasks = workflow.getTaskList();
@@ -406,6 +476,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 					submitTask(tasks.get(index), preference, tasks.get(index).getTaskAppId());
 					dependencies.removeTask(tasks.get(index).getTaskAppId());
 				}
+				//System.out.println("started workflow: " + winner.getId());
 				break;
 			}//when submitting tasks, delays are 0 for same edge device tasks, > 0 for different edges
 			case SEND_RESULTS_TO_UNLOCKABLE_TASKS:
@@ -675,7 +746,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 
 	@Override
 	public void processWorkflow(WorkflowProperty workflowProperty) {
-		System.out.println("Processing Workflow " + workflowProperty.getMobileDeviceId() + ", app " + workflowProperty.getWorkflowType());
+		//System.out.println("Processing Workflow " + workflowProperty.getMobileDeviceId() + ", app " + workflowProperty.getWorkflowType());
 		// Compute the PCPs (Partial Critical Paths) for the workflow
 		computePCPs(workflowProperty);
 		// Next step is to create personal mapping for each task in the workflow
@@ -733,7 +804,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		// based on the PCPs computed earlier.
 		int numofEdgeHosts = SimSettings.getInstance().getNumOfEdgeHosts();
 		double [] readyTimes = new double[numofEdgeHosts];
-		System.out.println("Creating Personal Mapping for Workflow");
+		//System.out.println("Creating Personal Mapping for Workflow");
 		Map<Integer, List<TaskAssignmentInfo>> personalMappings = new HashMap<>();
 		for (int i = 0; i < numofEdgeHosts; i++) {
 			personalMappings.put(i, new ArrayList<>());
@@ -1055,4 +1126,16 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
     public void setWorkflowList(ArrayList<WorkflowProperty> workflowList) {
         this.workflowList = workflowList;
     }
+
+	public int getRetired() {
+		return retired;
+	}
+
+	public int getFailed() {
+		return failed;
+	}
+
+	public void setFailed(int failed) {
+		this.failed = failed;
+	}
 }
