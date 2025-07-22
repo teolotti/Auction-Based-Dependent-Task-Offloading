@@ -2,7 +2,7 @@
 <edge_devices>
 	<datacenter arch="x86" os="Linux" vmm="Xen">
 		<costPerBw>0.1</costPerBw>
-		<costPerSec>3.0</costPerSec>
+		<costPerSec>9.9</costPerSec>
 		<costPerMem>0.05</costPerMem>
 		<costPerStorage>0.1</costPerStorage>
 		<location>
@@ -27,10 +27,11 @@
 				</VMs>
 			</host>
 		</hosts>
+		
 	</datacenter>
 	<datacenter arch="x86" os="Linux" vmm="Xen">
 		<costPerBw>0.1</costPerBw>
-		<costPerSec>3.0</costPerSec>
+		<costPerSec>8.0</costPerSec>
 		<costPerMem>0.05</costPerMem>
 		<costPerStorage>0.1</costPerStorage>
 		<location>
@@ -58,7 +59,7 @@
 	</datacenter>
 	<datacenter arch="x86" os="Linux" vmm="Xen">
 		<costPerBw>0.1</costPerBw>
-		<costPerSec>3.0</costPerSec>
+		<costPerSec>7.0</costPerSec>
 		<costPerMem>0.05</costPerMem>
 		<costPerStorage>0.1</costPerStorage>
 		<location>
@@ -86,7 +87,7 @@
 	</datacenter>
 	<datacenter arch="x86" os="Linux" vmm="Xen">
 		<costPerBw>0.1</costPerBw>
-		<costPerSec>3.0</costPerSec>
+		<costPerSec>5.0</costPerSec>
 		<costPerMem>0.05</costPerMem>
 		<costPerStorage>0.1</costPerStorage>
 		<location>

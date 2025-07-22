@@ -40,7 +40,9 @@ import edu.boun.edgecloudsim.utils.SimLogger;
 import edu.boun.edgecloudsim.utils.TaskProperty;
 import edu.boun.edgecloudsim.utils.WorkflowProperty;
 
+import org.cloudbus.cloudsim.Cloudlet;
 import org.cloudbus.cloudsim.CloudletScheduler;
+import org.cloudbus.cloudsim.Host;
 import org.cloudbus.cloudsim.UtilizationModel;
 import org.cloudbus.cloudsim.UtilizationModelFull;
 import org.cloudbus.cloudsim.Vm;
@@ -48,10 +50,6 @@ import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.core.CloudSimTags;
 import org.cloudbus.cloudsim.core.SimEvent;
 import org.apache.commons.math3.distribution.UniformRealDistribution;
-
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
 
 import java.math.BigInteger;
 import java.util.*;
@@ -76,6 +74,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 	private static final int RUN_AUCTION     = BASE+11;
 	private static final int AUCTION_RESULT  = BASE+12;
 	
+	private int registrationThreshold = 30;
 	private int completed = 0;
 	private int failed = 0;
 	private int retired = 0;
@@ -95,6 +94,11 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 	private ArrayList<Double> makespans = new ArrayList<>();
 	private Map<Integer, Double> valuations = new HashMap<>();
 	private Map<Integer, Double> payments = new HashMap<>();
+	private Map<Integer, Integer> registrations = new HashMap<>();
+
+	private int winners = 0;
+
+	private int submitted = 0;
 	
 	
 	public SampleMobileDeviceManager() throws Exception{
@@ -114,6 +118,10 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		super.startEntity();
 		schedule(getId(), SimSettings.CLIENT_ACTIVITY_START_TIME +
 				MM1_QUEUE_MODEL_UPDATE_INTEVAL, UPDATE_MM1_QUEUE_MODEL);
+		int numEdgeDevices = SimSettings.getInstance().getNumOfEdgeHosts();
+		for(int i = 0; i < numEdgeDevices; i++) {
+			registrations.put(i, 0);
+		}
 	}
 	
 	/**
@@ -196,59 +204,48 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 					getHostList().get(0)).getVmList().get(0));
 			
 			WorkflowProperty workflow = workflowList.get(task.getMobileDeviceId());
-			if(CloudSim.clock() >= workflow.getDeadline()) {
-				workflow.setFailed(true);
-				failed++;
-				//System.out.println("failed: " + failed);
-			}
-			if(!workflow.isFailed()) {
-				ArrayList<Integer> finalTaskIds = new ArrayList<>();
-				finalTaskIds = workflow.getFinalTaskIds();
-				workflow.removeFinalTaskIndex(task.getTaskAppId());
-				workflow.markCompleted(task.getTaskAppId());
-				if(!finalTaskIds.contains(task.getTaskAppId()))
-					schedule(getId(), 0.0, SEND_RESULTS_TO_UNLOCKABLE_TASKS, task);
-				if(vm.getCloudletScheduler().getCloudletExecList().isEmpty())//if edge device queue is empty, fill it
-					schedule(getId(), 0.0, RUN_AUCTION);
-				auctionsNumberFromQueues++;
+			ArrayList<Integer> finalTaskIds = new ArrayList<>();
+			finalTaskIds = workflow.getFinalTaskIds();
+			workflow.removeFinalTaskIndex(task.getTaskAppId());
+			workflow.markCompleted(task.getTaskAppId());
+			if(!finalTaskIds.contains(task.getTaskAppId()))
+				schedule(getId(), 0.0, SEND_RESULTS_TO_UNLOCKABLE_TASKS, task);
+			if(vm.getCloudletScheduler().getCloudletWaitingList().isEmpty())//if edge device queue is empty, fill it
+				schedule(getId(), 0.0, RUN_AUCTION);
+			auctionsNumberFromQueues++;
+			
+			//if no last task left, conclude, send to the mobile device and schedule an auction
+			if(finalTaskIds.isEmpty()) {
+				//if neighbor edge device is selected
+				if(host.getLocation().getServingWlanId() != task.getSubmittedLocation().getServingWlanId())
+				{
+					delay = networkModel.getDownloadDelay(SimSettings.GENERIC_EDGE_DEVICE_ID, SimSettings.GENERIC_EDGE_DEVICE_ID, task);
+					nextEvent = RESPONSE_RECEIVED_BY_EDGE_DEVICE_TO_RELAY_MOBILE_DEVICE;
+					nextDeviceForNetworkModel = SimSettings.GENERIC_EDGE_DEVICE_ID + 1;
+					delayType = NETWORK_DELAY_TYPES.MAN_DELAY;
+				}
 				
-				//if no last task left, conclude, send to the mobile device and schedule an auction
-				if(finalTaskIds.isEmpty()) {
-					++completed;
-					//System.out.println("completati: " + ++completed);
-					//if neighbor edge device is selected
-					if(host.getLocation().getServingWlanId() != task.getSubmittedLocation().getServingWlanId())
+				if(delay > 0)
+				{
+					Location currentLocation = SimManager.getInstance().getMobilityModel().getLocation(task.getMobileDeviceId(),CloudSim.clock()+delay);
+					if(task.getSubmittedLocation().getServingWlanId() == currentLocation.getServingWlanId())
 					{
-						delay = networkModel.getDownloadDelay(SimSettings.GENERIC_EDGE_DEVICE_ID, SimSettings.GENERIC_EDGE_DEVICE_ID, task);
-						nextEvent = RESPONSE_RECEIVED_BY_EDGE_DEVICE_TO_RELAY_MOBILE_DEVICE;
-						nextDeviceForNetworkModel = SimSettings.GENERIC_EDGE_DEVICE_ID + 1;
-						delayType = NETWORK_DELAY_TYPES.MAN_DELAY;
-					}
-					
-					if(delay > 0)
-					{
-						Location currentLocation = SimManager.getInstance().getMobilityModel().getLocation(task.getMobileDeviceId(),CloudSim.clock()+delay);
-						if(task.getSubmittedLocation().getServingWlanId() == currentLocation.getServingWlanId())
-						{
-							networkModel.downloadStarted(currentLocation, nextDeviceForNetworkModel);
-							SimLogger.getInstance().setDownloadDelay(task.getCloudletId(), delay, delayType);
-							
-							schedule(getId(), delay, nextEvent, task);
-						}
-						else
-						{
-							SimLogger.getInstance().failedDueToMobility(task.getCloudletId(), CloudSim.clock());
-						}
+						networkModel.downloadStarted(currentLocation, nextDeviceForNetworkModel);
+						SimLogger.getInstance().setDownloadDelay(task.getCloudletId(), delay, delayType);
+						
+						schedule(getId(), delay, nextEvent, task);
 					}
 					else
 					{
-						SimLogger.getInstance().failedDueToBandwidth(task.getCloudletId(), CloudSim.clock(), delayType);
+						SimLogger.getInstance().failedDueToMobility(task.getCloudletId(), CloudSim.clock());
 					}
-					schedule(getId(), 0.0, RUN_AUCTION);//run auction when an app is completed
-					auctionsNumberFromCompletions++;
-				}else {
-					SimLogger.getInstance().taskEnded(task.getCloudletId(), CloudSim.clock());
 				}
+				else
+				{
+					SimLogger.getInstance().failedDueToBandwidth(task.getCloudletId(), CloudSim.clock(), delayType);
+				}
+				schedule(getId(), 0.0, RUN_AUCTION);//run auction when an app is completed
+				auctionsNumberFromCompletions++;
 			}else {
 				SimLogger.getInstance().taskEnded(task.getCloudletId(), CloudSim.clock());
 			}
@@ -282,16 +279,6 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 			{
 				Task task = (Task) ev.getData();
 				WorkflowProperty workflow = workflowList.get(task.getMobileDeviceId());
-				if(CloudSim.clock() >= workflow.getDeadline()) {
-					setFailed(getFailed() + 1);
-					failed++;
-					//System.out.println("failed: " + failed);
-					workflow.setFailed(true);
-				}
-				if(workflow.isFailed()) {
-					SimLogger.getInstance().taskEnded(task.getCloudletId(), CloudSim.clock());
-					break;
-				}
 				networkModel.uploadFinished(task.getSubmittedLocation(), SimSettings.GENERIC_EDGE_DEVICE_ID);
 				//if task is unlocked, submit it
 				ArrayList<Integer> unlockedTasks = appDependenciesList.get(task.getMobileDeviceId()).checkForUnlockedTasks();
@@ -301,6 +288,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 					submitTaskToVm(task, SimSettings.VM_TYPES.EDGE_VM);
 					AppDependencies dependencies = appDependenciesList.get(task.getMobileDeviceId());
 					dependencies.removeTask(task.getTaskAppId());
+					break;
 				}
 				ArrayList<Integer> initialTasks = workflowList.get(task.getMobileDeviceId()).getInitialTaskIds();
 				if(initialTasks.contains(task.getTaskAppId()))
@@ -370,6 +358,21 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 			{
 				Task task = (Task) ev.getData();
 				WorkflowProperty workflow = workflowList.get(task.getMobileDeviceId());
+				int associatedEdge = SimManager.getInstance().getMobilityModel().
+						getLocation(workflow.getMobileDeviceId(), CloudSim.clock()).getServingWlanId();
+				registrations.put(associatedEdge, registrations.get(associatedEdge) - 1);
+				if(CloudSim.clock() >= workflow.getDeadline()) {
+					setFailed(getFailed() + 1);
+					failed++;
+					//System.out.println("failed: " + failed);
+					workflow.setFailed(true);
+					//System.out.println("cpu processing time : " + task.getActualCPUTime());
+					//System.out.println("cpu waiting time : " + task.getWaitingTime());
+					valuations.remove(workflow.getMobileDeviceId());
+				}else {
+					++completed;
+					//System.out.println("completati: " + ++completed);
+				}
 				
 				if(task.getAssociatedDatacenterId() == SimSettings.CLOUD_DATACENTER_ID)
 					networkModel.downloadFinished(task.getSubmittedLocation(), SimSettings.CLOUD_DATACENTER_ID);
@@ -385,48 +388,67 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 			case ENQUEUE_REQ:
 			{
 				WorkflowProperty workflow = (WorkflowProperty) ev.getData();
-				//System.out.println("Arrived workflow " + workflow.getMobileDeviceId());
-				
-				Task dummyTask = new Task (workflow.getMobileDeviceId(), -1, 0, 1, workflow.getUploadSize(), workflow.getDownloadSize(), null, null, null, 0);
-				
-				//need to handle two-hop situations
-				double uploadCost = networkModel.getUploadDelay(workflow.getMobileDeviceId(), SimSettings.GENERIC_EDGE_DEVICE_ID, dummyTask);
-				double downloadCost = networkModel.getDownloadDelay(SimSettings.GENERIC_EDGE_DEVICE_ID, workflow.getMobileDeviceId(), dummyTask);
-
-				double processingEstimated = workflow.getPredictedMakespan() + uploadCost + downloadCost;
-				if(CloudSim.clock() + processingEstimated > workflow.getDeadline()){//handle failure of workflow here
-					retired++;
-					//System.out.println("retired as of now: " + ++retired);
-					break;
+				//System.out.println("workflow " + workflow.getMobileDeviceId() + " tries to enter");
+				int associatedEdge = SimManager.getInstance().getMobilityModel().
+						getLocation(workflow.getMobileDeviceId(), CloudSim.clock()).getServingWlanId();
+				if(registrations.get(associatedEdge) < registrationThreshold) {
+					registrations.put(associatedEdge, registrations.get(associatedEdge) + 1);
+					
+					reqQueue.add(new Request(workflow.getMobileDeviceId(), 0, 0, workflow));//dummy request to symbolize registration
+					//System.out.println("request queue size: " + reqQueue.size());
+					if(!auctionRunning) {
+						schedule(getId(), 0.1, RUN_AUCTION);
+					}
+					else
+						auctionTodoCounter++;
+					auctionsNumberFromArrivals++;
+				}else {
+					//System.out.println("but fails");
+					schedule(getId(), 0.01, ENQUEUE_REQ, workflow);
 				}
-				double maxUnitCost = SimManager.getInstance().getEdgeServerManager().getMaxCost();
-				double minMips = SimManager.getInstance().getEdgeServerManager().getMinMips();
-				double bid = decideBid(workflow.getTotalWorkload(), maxUnitCost, minMips);
-				
-				Request request = new Request(workflow.getMobileDeviceId(), bid, processingEstimated, workflow);
-				
-				AppDependencies dependencies = new AppDependencies();
-				dependencies.addWorkflowDependencies(workflow);
-				appDependenciesList.put(workflow.getMobileDeviceId(), dependencies);
-
-				reqQueue.add(request);
-				//System.out.println("request queue size: " + reqQueue.size());
-				if(!auctionRunning) {
-					schedule(getId(), 0.01, RUN_AUCTION);
-				}
-				else
-					auctionTodoCounter++;
-				auctionsNumberFromArrivals++;
 				break;
 			}
 			case RUN_AUCTION:
-			{
+			{	
+				Iterator<Request> it = reqQueue.iterator();
+				while(it.hasNext()) {
+					Request request = it.next();
+					WorkflowProperty workflow = request.getWorkflow();
+					processWorkflow(workflow);
+					int associatedEdge = SimManager.getInstance().getMobilityModel().
+							getLocation(workflow.getMobileDeviceId(), CloudSim.clock()).getServingWlanId();
+					Task dummyTask = new Task (workflow.getMobileDeviceId(), -1, 0, 1, workflow.getUploadSize(), workflow.getDownloadSize(), null, null, null, 0);
+					
+					//need to handle two-hop situations
+					double uploadCost = networkModel.getUploadDelay(workflow.getMobileDeviceId(), SimSettings.GENERIC_EDGE_DEVICE_ID, dummyTask);
+					double downloadCost = networkModel.getDownloadDelay(SimSettings.GENERIC_EDGE_DEVICE_ID, workflow.getMobileDeviceId(), dummyTask);
+
+					double processingEstimated = workflow.getPredictedMakespan() + uploadCost + downloadCost;
+					if(CloudSim.clock() + processingEstimated > workflow.getDeadline()){//chance of failing here
+						failed++;
+						registrations.put(associatedEdge, registrations.get(associatedEdge) - 1);
+						System.out.printf("\nregistrations for edge device %d: %d", associatedEdge, registrations.get(associatedEdge));
+						it.remove();
+					}else {
+						double maxUnitCost = SimManager.getInstance().getEdgeServerManager().getMaxCost();
+						double minMips = SimManager.getInstance().getEdgeServerManager().getMinMips();
+						double bid = decideBid(workflow.getTotalWorkload(), maxUnitCost, minMips);
+						
+						request.setBid(bid);
+						request.setProcessingEstimated(processingEstimated);
+						
+						AppDependencies dependencies = new AppDependencies();
+						dependencies.addWorkflowDependencies(workflow);
+						appDependenciesList.put(workflow.getMobileDeviceId(), dependencies);
+					}
+				}
+				
 				if(reqQueue.size() <= 0)
 					break;
 				auctionRunning = true;
 				AuctionResult winnerData = ((SampleEdgeOrchestrator)SimManager.getInstance().getEdgeOrchestrator()).auction(reqQueue);
 				Request winner = null;
-				double auctionTime = (double) reqQueue.size() * Math.log((double) reqQueue.size()) * 0.01 + 0.1;
+				double auctionTime = (double) reqQueue.size() * Math.log((double) reqQueue.size()) * 0.01 + 0.01;
 				for(Request request : reqQueue) {
 					if(winnerData.getWinnerId() == request.getId()) {
 						winner = request;
@@ -438,6 +460,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 				valuations.put(winnerData.getWinnerId(), valuation);
 				payments.put(winnerData.getWinnerId(), payment);
 				//System.out.println("winner: " + winner.getId());
+				//System.out.println("winners: " + ++winners);
 				
 				if(winner != null) {
 					schedule(getId(), auctionTime, AUCTION_RESULT, winner);
@@ -456,13 +479,6 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 				auctionRunning = false;
 				Request winner = (Request) ev.getData();
 				WorkflowProperty workflow = winner.getWorkflow();
-				if(CloudSim.clock() >= workflow.getDeadline()) {
-					workflow.setFailed(true);
-					failed++;
-					//System.out.println("failed: " + failed);
-					setFailed(getFailed() + 1);
-					break;
-				}
 				ArrayList<Integer> firsts = workflowList.get(workflow.getMobileDeviceId()).getInitialTaskIds();
 				//submit the first tasks of the winner using an indexed list
 				ArrayList<TaskProperty> tasks = workflow.getTaskList();
@@ -675,8 +691,12 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 				task.setAssociatedVmId(selectedVM.getId());
 				
 				//bind task to related VM
-				getCloudletList().add(task);
-				bindCloudletToVm(task.getCloudletId(), selectedVM.getId());
+				List<Task> list = getCloudletList();
+				
+				if(!list.stream().anyMatch(c -> c.getTaskAppId() == task.getTaskAppId())) {
+					getCloudletList().add(task);
+					bindCloudletToVm(task.getCloudletId(), selectedVM.getId());
+				}
 				
 				if(selectedVM instanceof EdgeVM){
 					EdgeHost host = (EdgeHost)(selectedVM.getHost());
@@ -704,6 +724,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 	
 	private void submitTaskToVm(Task task, SimSettings.VM_TYPES vmType) {
 		//SimLogger.printLine(CloudSim.clock() + ": Cloudlet#" + task.getCloudletId() + " is submitted to VM#" + task.getVmId());
+		task.setVmId(task.getAssociatedVmId());
 		schedule(getVmsToDatacentersMap().get(task.getVmId()), 0, CloudSimTags.CLOUDLET_SUBMIT, task);
 		
 		SimLogger.getInstance().taskAssigned(task.getCloudletId(),

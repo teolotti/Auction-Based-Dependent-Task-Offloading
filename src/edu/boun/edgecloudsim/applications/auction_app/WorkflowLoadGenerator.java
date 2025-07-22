@@ -37,7 +37,7 @@ public class WorkflowLoadGenerator extends LoadGeneratorModel {
 //        }
         // Valuta se servono distribuzioni esponenziali per input/output file size e task length oppure no
 
-
+        double interArrivalTime = 0;
         // Each mobile device utilizes an app type (workflow type)
         workflowTypeOfDevices = new int[numberOfMobileDevices];
         for (int i = 0; i < numberOfMobileDevices; i++) {
@@ -69,7 +69,7 @@ public class WorkflowLoadGenerator extends LoadGeneratorModel {
 
             ExponentialDistribution rng = new ExponentialDistribution(poissonMean);
 
-            double interArrivalTime = rng.sample();
+            interArrivalTime += rng.sample();
 
             if (interArrivalTime < 0) {
                 SimLogger.printLine("Impossible is occurred! Inter-arrival time is " + interArrivalTime + " for device " + i + " at time " + virtualTime);

@@ -110,6 +110,7 @@ public class SampleEdgeOrchestrator extends EdgeOrchestrator {
 		Vm selectedVM = null;
 		List<EdgeVM> vmArray = SimManager.getInstance().getEdgeServerManager().getVmList(deviceId);
 		selectedVM = vmArray.get(0);
+		int id = selectedVM.getId();
 		
 		return selectedVM;
 	}
