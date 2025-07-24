@@ -27,6 +27,7 @@ public class WorkflowProperty {
     private ArrayList<Integer> completedTasks;
    	private long totalWorkload;
    	private boolean failed = false;
+   	private boolean completed = false;
 
 
 
@@ -214,5 +215,13 @@ public class WorkflowProperty {
 
 	public void setFailed(boolean failed) {
 		this.failed = failed;
+	}
+
+	public boolean isCompleted() {
+		return completed;
+	}
+
+	public void setCompleted(boolean completed) {
+		this.completed = completed;
 	}
 }

@@ -22,7 +22,15 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import java.io.IOException;
+import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class MainApp {
 
@@ -73,70 +81,138 @@ public class MainApp {
 		String now = df.format(SimulationStartDate);
 		SimLogger.printLine("Simulation started at " + now);
 		SimLogger.printLine("----------------------------------------------------------------------");
-
+		
+		int numMobileDevices = 300;
+		int numRepetitions = 30;
+		double baseLambda = 5;
+		int lambdaIncrements = 12;
+		String filePath = "results/";
+		Map<Integer, String> heuristicDict = new HashMap<>();
+		heuristicDict.put(0, "au-pcp");
+		heuristicDict.put(1, "nearest");
+		heuristicDict.put(2, "selfish");
+		
 		for(int j=SS.getMinNumOfMobileDev(); j<=SS.getMaxNumOfMobileDev(); j+=SS.getMobileDevCounterSize())
 		{
-			for(int k=0; k<1; k++)
+			for(int k=0; k<1; k++)//scenario (single tier is sufficient here)
 			{
-				for(int i=0; i<1; i++)
+				for(int i=0; i<3; i++)//iterating on heuristics
 				{
-					String simScenario = SS.getSimulationScenarios()[k];
-					String orchestratorPolicy = SS.getOrchestratorPolicies()[i];
-					Date ScenarioStartDate = Calendar.getInstance().getTime();
-					now = df.format(ScenarioStartDate);
+					ArrayList<Double> makespans = new ArrayList<>();
+					ArrayList<Double> valuations = new ArrayList<>();
+					ArrayList<Double> successRates = new ArrayList<>();
+					for(int m=1; m<=lambdaIncrements; m++) {//loop for lambda parameter change
+						double successRate = 0;
+						double avgMakespan = 0;
+						double totalValuation = 0;
+						SS.setLAMBDA(baseLambda * m);
+						for(int l=0; l<numRepetitions; l++) {//averaging iterations for variance reduction
+							//TODO change parameters initializations
+							//TODO change lambda for load generation
+							String simScenario = SS.getSimulationScenarios()[k];
+							String orchestratorPolicy = SS.getOrchestratorPolicies()[i];
+							Date ScenarioStartDate = Calendar.getInstance().getTime();
+							now = df.format(ScenarioStartDate);
 
-					SimLogger.printLine("Scenario started at " + now);
-					SimLogger.printLine("Scenario: " + simScenario + " - Policy: " + orchestratorPolicy + " - #iteration: " + iterationNumber);
-					SimLogger.printLine("Duration: " + SS.getSimulationTime()/60 + " min (warm up period: "+ SS.getWarmUpPeriod()/60 +" min) - #devices: " + j);
-					SimLogger.getInstance().simStarted(outputFolder,"SIMRESULT_" + simScenario + "_"  + orchestratorPolicy + "_" + j + "DEVICES");
+							SimLogger.printLine("Scenario started at " + now);
+							SimLogger.printLine("Scenario: " + simScenario + " - Policy: " + orchestratorPolicy + " - #iteration: " + iterationNumber);
+							SimLogger.printLine("Duration: " + SS.getSimulationTime()/60 + " min (warm up period: "+ SS.getWarmUpPeriod()/60 +" min) - #devices: " + j);
+							SimLogger.getInstance().simStarted(outputFolder,"SIMRESULT_" + simScenario + "_"  + orchestratorPolicy + "_" + j + "DEVICES");
 
-					try
-					{
-						// First step: Initialize the CloudSim package. It should be called
-						// before creating any entities.
-						int num_user = 2;   // number of grid users
-						Calendar calendar = Calendar.getInstance();
-						boolean trace_flag = false;  // mean trace events
+							try
+							{
+								// First step: Initialize the CloudSim package. It should be called
+								// before creating any entities.
+								int num_user = 2;   // number of grid users
+								Calendar calendar = Calendar.getInstance();
+								boolean trace_flag = false;  // mean trace events
 
-						// Initialize the CloudSim library
-						CloudSim.init(num_user, calendar, trace_flag, 0.01);
+								// Initialize the CloudSim library
+								CloudSim.init(num_user, calendar, trace_flag, 0.01);
 
-						// Generate EdgeCloudsim Scenario Factory
-						ScenarioFactory sampleFactory = new SampleScenarioFactory(j,SS.getSimulationTime(), orchestratorPolicy, simScenario);
+								// Generate EdgeCloudsim Scenario Factory
+								ScenarioFactory sampleFactory = new SampleScenarioFactory(numMobileDevices,SS.getSimulationTime(), orchestratorPolicy, simScenario);
 
-						// Generate EdgeCloudSim Simulation Manager, using our AuctionSimManager
-						SimManager manager = new AuctionSimManager(sampleFactory, j, simScenario, orchestratorPolicy);
+								// Generate EdgeCloudSim Simulation Manager, using our AuctionSimManager
+								SimManager manager = new AuctionSimManager(sampleFactory, numMobileDevices, simScenario, orchestratorPolicy);
 
-						// Start simulation
-						manager.startSimulation();
+								// Start simulation
+								manager.startSimulation();
+							}
+							catch (Exception e)
+							{
+								SimLogger.printLine("The simulation has been terminated due to an unexpected error");
+								e.printStackTrace();
+								System.exit(0);
+							}
+
+							Date ScenarioEndDate = Calendar.getInstance().getTime();
+							now = df.format(ScenarioEndDate);
+							SimLogger.printLine("Scenario finished at " + now +  ". It took " + SimUtils.getTimeDifference(ScenarioStartDate,ScenarioEndDate));
+							SimLogger.printLine("----------------------------------------------------------------------");
+							SampleMobileDeviceManager deviceManager = (SampleMobileDeviceManager)SimManager.getInstance().getMobileDeviceManager();
+							ArrayList<Double> iterationMakespans = deviceManager.getMakespans();
+							Map<Integer, Double> iterationValuations = deviceManager.getValuations();
+							Map<Integer, Double> payments = deviceManager.getValuations();
+							successRate += deviceManager.getSuccessPercentage();
+							double avgIterationMakespan = 0;
+							for(Double makespan : iterationMakespans) {
+								avgIterationMakespan += makespan;
+							}
+							avgIterationMakespan /= iterationMakespans.size();
+							avgMakespan += avgIterationMakespan;
+							double totalIterationValuation = 0;
+							for(Map.Entry<Integer, Double> entry : iterationValuations.entrySet()) {
+								totalIterationValuation += entry.getValue();
+							}
+							totalValuation += totalIterationValuation;
+						}
+						successRate /= numRepetitions;
+						avgMakespan /= numRepetitions;
+						if(Double.isNaN(avgMakespan))
+							avgMakespan = makespans.get(m-2);
+						totalValuation /= numRepetitions;
+						makespans.add(avgMakespan);
+						valuations.add(totalValuation);
+						successRates.add(successRate);
 					}
-					catch (Exception e)
-					{
-						SimLogger.printLine("The simulation has been terminated due to an unexpected error");
+					System.out.println("Risultati:" + i);
+					System.out.println("Valuations: ");
+					for(int l=0; l<valuations.size(); l++) {
+						System.out.printf("%f, ", valuations.get(l));
+					}
+					System.out.printf("\n");
+					System.out.println("Makespans: ");
+					for(int l=0; l<makespans.size(); l++) {
+						System.out.printf("%f, ", makespans.get(l));
+					}
+					System.out.printf("\n");
+					System.out.println("Success rates: ");
+					for(int l=0; l<successRates.size(); l++) {
+						System.out.printf("%f, ", successRates.get(l));
+					}
+					String jsonName = "valuation_results_" + heuristicDict.get(i) + ".json";
+					Gson gson = new GsonBuilder()
+		                    .setPrettyPrinting()
+		                    .serializeNulls()  // include nulls if you want
+		                    .create();
+					try (Writer writer = Files.newBufferedWriter(Paths.get(filePath + jsonName))) {
+				        gson.toJson(gson.toJsonTree(valuations), writer);
+				    } catch (IOException e) {
 						e.printStackTrace();
-						System.exit(0);
 					}
-
-					Date ScenarioEndDate = Calendar.getInstance().getTime();
-					now = df.format(ScenarioEndDate);
-					SimLogger.printLine("Scenario finished at " + now +  ". It took " + SimUtils.getTimeDifference(ScenarioStartDate,ScenarioEndDate));
-					SimLogger.printLine("----------------------------------------------------------------------");
-					SampleMobileDeviceManager deviceManager = (SampleMobileDeviceManager)SimManager.getInstance().getMobileDeviceManager();
-					ArrayList<Double> makespans = deviceManager.getMakespans();
-					Map<Integer, Double> valuations = deviceManager.getValuations();
-					Map<Integer, Double> payments = deviceManager.getValuations();
-					double successRate = deviceManager.getSuccessPercentage();
-					double avgMakespan = 0;
-					for(Double makespan : makespans) {
-						avgMakespan += makespan;
+					jsonName = "makespan_results_" + heuristicDict.get(i) + ".json";
+					try (Writer writer = Files.newBufferedWriter(Paths.get(filePath + jsonName))) {
+				        gson.toJson(gson.toJsonTree(makespans), writer);
+				    } catch (IOException e) {
+						e.printStackTrace();
 					}
-					avgMakespan /= j;
-					double totalValuation = 0;
-					for(Map.Entry<Integer, Double> entry : valuations.entrySet()) {
-						totalValuation += entry.getValue();
+					jsonName = "success_results_" + heuristicDict.get(i) + ".json";
+					try (Writer writer = Files.newBufferedWriter(Paths.get(filePath + jsonName))) {
+				        gson.toJson(gson.toJsonTree(successRates), writer);
+				    } catch (IOException e) {
+						e.printStackTrace();
 					}
-					System.out.printf("Success rate : %f\nAverage Makespan : %f\nTotal Valuation: %f\n", successRate, avgMakespan, totalValuation);
-					System.out.printf("Retired: %d\n", deviceManager.getRetired());
 					
 				}//End of orchestrators loop
 			}//End of scenarios loop

@@ -59,10 +59,12 @@ public class StaticMobility extends MobilityModel {
 		//initialize tree maps and position of mobile devices
 		for(int i=0; i<numberOfMobileDevices; i++) {
 			
-			
+			int number = SimSettings.getInstance().getNumOfEdgeDatacenters()-1;
 			int randDatacenterId = SimUtils.getRandomNumber(0, SimSettings.getInstance().getNumOfEdgeDatacenters()-1);
 			Node datacenterNode = datacenterList.item(randDatacenterId);
 			Element datacenterElement = (Element) datacenterNode;
+			if(datacenterElement == null)
+				System.out.println("Strano");
 			Element location = (Element)datacenterElement.getElementsByTagName("location").item(0);
 			String attractiveness = location.getElementsByTagName("attractiveness").item(0).getTextContent();
 			int placeTypeIndex = Integer.parseInt(attractiveness);

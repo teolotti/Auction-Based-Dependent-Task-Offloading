@@ -17,6 +17,7 @@ bin
 
 # simulation output folder
 sim_results
+results
 
 # eclipse's files
 .settings

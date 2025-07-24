@@ -97,6 +97,8 @@ public class SimSettings {
 	private double EASTERN_BOUND;
 	private double SOUTHERN_BOUND;
 	private double WESTERN_BOUND;
+	
+	private double LAMBDA;
 
 	// mean waiting time (minute) is stored for each place types
 	private double[] mobilityLookUpTable;
@@ -1063,6 +1065,14 @@ public class SimSettings {
 		// This method should return the workflows parsed from the XML
 		// The implementation is not provided in the original code, so it is assumed to be similar to the parseApplicationsXML method
 		return workflows;
+	}
+
+	public double getLAMBDA() {
+		return LAMBDA;
+	}
+
+	public void setLAMBDA(double lAMBDA) {
+		LAMBDA = lAMBDA;
 	}
 
 

@@ -70,9 +70,10 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 
 	private static final double MM1_QUEUE_MODEL_UPDATE_INTEVAL = 5; //seconds
 	
-	private static final int ENQUEUE_REQ     = BASE+10;
-	private static final int RUN_AUCTION     = BASE+11;
-	private static final int AUCTION_RESULT  = BASE+12;
+	private static final int ENQUEUE_REQ = BASE+10;
+	private static final int RUN_AUCTION = BASE+11;
+	private static final int AUCTION_RESULT = BASE+12;
+	private static final int RETRIEVE_EDGE_STATUS = BASE+13;
 	
 	private int registrationThreshold = 30;
 	private int completed = 0;
@@ -81,6 +82,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 	private int auctionsNumberFromArrivals = 0;
 	private int auctionsNumberFromQueues = 0;
 	private int auctionsNumberFromCompletions = 0;
+	private final double edgeStatusRetrievalDelay = 0.02;
 
 	private  Deque<Request> reqQueue = new ArrayDeque<>();
 	private  int auctionTodoCounter = 0;
@@ -95,6 +97,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 	private Map<Integer, Double> valuations = new HashMap<>();
 	private Map<Integer, Double> payments = new HashMap<>();
 	private Map<Integer, Integer> registrations = new HashMap<>();
+	private ArrayList<EdgeStatus> statuses = new ArrayList<>();
 
 	private int winners = 0;
 
@@ -122,6 +125,8 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		for(int i = 0; i < numEdgeDevices; i++) {
 			registrations.put(i, 0);
 		}
+		statuses = SimManager.getInstance().getEdgeServerManager().getEdgeDevicesStatus();
+		schedule(getId(), edgeStatusRetrievalDelay, RETRIEVE_EDGE_STATUS);
 	}
 	
 	/**
@@ -370,6 +375,9 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 					//System.out.println("cpu waiting time : " + task.getWaitingTime());
 					valuations.remove(workflow.getMobileDeviceId());
 				}else {
+					//collect workflow makespan
+					double makespan = task.getFinishTime() - workflow.getStartTime();
+					makespans.add(makespan);
 					++completed;
 					//System.out.println("completati: " + ++completed);
 				}
@@ -380,9 +388,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 					networkModel.downloadFinished(task.getSubmittedLocation(), SimSettings.GENERIC_EDGE_DEVICE_ID);
 				
 				SimLogger.getInstance().taskEnded(task.getCloudletId(), CloudSim.clock());
-				//collect workflow makespan
-				double makespan = task.getFinishTime() - workflow.getStartTime();
-				makespans.add(makespan);
+				
 				break;
 			}
 			case ENQUEUE_REQ:
@@ -427,7 +433,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 					if(CloudSim.clock() + processingEstimated > workflow.getDeadline()){//chance of failing here
 						failed++;
 						registrations.put(associatedEdge, registrations.get(associatedEdge) - 1);
-						System.out.printf("\nregistrations for edge device %d: %d", associatedEdge, registrations.get(associatedEdge));
+						//System.out.printf("\nregistrations for edge device %d: %d", associatedEdge, registrations.get(associatedEdge));
 						it.remove();
 					}else {
 						double maxUnitCost = SimManager.getInstance().getEdgeServerManager().getMaxCost();
@@ -523,6 +529,12 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 					}
 					
 				}
+				break;
+			}
+			case RETRIEVE_EDGE_STATUS:
+			{
+				statuses = SimManager.getInstance().getEdgeServerManager().getEdgeDevicesStatus();
+				schedule(getId(), edgeStatusRetrievalDelay, RETRIEVE_EDGE_STATUS);
 				break;
 			}
 			default:
@@ -833,7 +845,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 				personalMappings.get(i).add(new TaskAssignmentInfo(j, 0.0, 0.0, 0.0));
 			}
 		}
-		ArrayList<EdgeStatus> statuses = SimManager.getInstance().getEdgeServerManager().getEdgeDevicesStatus();
+		//ArrayList<EdgeStatus> statuses = SimManager.getInstance().getEdgeServerManager().getEdgeDevicesStatus();
 		for (int i = 0; i < numofEdgeHosts; i++) {
 			readyTimes[i] = statuses.get(i).getWaitingTime();
 		}

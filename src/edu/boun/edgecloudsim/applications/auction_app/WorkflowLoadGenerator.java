@@ -60,14 +60,14 @@ public class WorkflowLoadGenerator extends LoadGeneratorModel {
 
 
             // Generate tasks for the selected workflow type
-            double poissonMean = SimSettings.getInstance().getWorkflows()[randomWorkflowType].getWorkflowProperties()[2];
+            double poissonMean = SimSettings.getInstance().getLAMBDA();
             double deadline_factor = SimSettings.getInstance().getWorkflows()[randomWorkflowType].getWorkflowProperties()[7];
             double dataUploadSize = SimSettings.getInstance().getWorkflows()[randomWorkflowType].getWorkflowProperties()[8];
             double dataDownloadSize = SimSettings.getInstance().getWorkflows()[randomWorkflowType].getWorkflowProperties()[9];
             double activePeriodStartTime = SimSettings.CLIENT_ACTIVITY_START_TIME;
             double virtualTime = activePeriodStartTime;
 
-            ExponentialDistribution rng = new ExponentialDistribution(poissonMean);
+            ExponentialDistribution rng = new ExponentialDistribution(1 / poissonMean);
 
             interArrivalTime += rng.sample();
 

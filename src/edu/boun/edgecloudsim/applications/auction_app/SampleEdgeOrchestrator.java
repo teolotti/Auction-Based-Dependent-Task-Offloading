@@ -116,12 +116,20 @@ public class SampleEdgeOrchestrator extends EdgeOrchestrator {
 	}
 	
 	public AuctionResult auction(Deque<Request> requests) {
-		
 		Request[] a = requests.toArray(new Request[0]);
-		Arrays.sort(a, (r1, r2) -> 
-	    Double.compare(
-	        r2.getBid() / r2.getProcessingEstimated(),
-	        r1.getBid() / r1.getProcessingEstimated()));
+		if(policy.equals("au-pcp")){
+			Arrays.sort(a, (r1, r2) -> 
+		    Double.compare(
+		        r2.getBid() / r2.getProcessingEstimated(), r1.getBid() / r1.getProcessingEstimated()));
+		}else if(policy.equals("nearest")) {
+			Arrays.sort(a, (r1, r2) -> 
+		    Double.compare(
+		        r2.getProcessingEstimated(), r1.getProcessingEstimated()));
+		}else if(policy.equals("selfish")) {
+			Arrays.sort(a, (r1, r2) -> 
+		    Double.compare(
+		        r2.getBid(), r1.getBid()));
+		}
 		int winnerId = a[0].getId();
 		double payment = requests.size() > 1 ? (a[1].getBid()/a[1].getProcessingEstimated()) * a[0].getProcessingEstimated() : a[0].getBid();
 		
