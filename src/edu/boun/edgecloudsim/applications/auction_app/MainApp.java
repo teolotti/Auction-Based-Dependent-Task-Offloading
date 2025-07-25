@@ -83,9 +83,10 @@ public class MainApp {
 		SimLogger.printLine("----------------------------------------------------------------------");
 		
 		int numMobileDevices = 300;
-		int numRepetitions = 30;
+		int numRepetitions = 200;
 		double baseLambda = 5;
 		int lambdaIncrements = 12;
+		int heuristics = 3;
 		String filePath = "results/";
 		Map<Integer, String> heuristicDict = new HashMap<>();
 		heuristicDict.put(0, "au-pcp");
@@ -96,7 +97,7 @@ public class MainApp {
 		{
 			for(int k=0; k<1; k++)//scenario (single tier is sufficient here)
 			{
-				for(int i=0; i<3; i++)//iterating on heuristics
+				for(int i=0; i<heuristics; i++)//iterating on heuristics
 				{
 					ArrayList<Double> makespans = new ArrayList<>();
 					ArrayList<Double> valuations = new ArrayList<>();
@@ -107,8 +108,6 @@ public class MainApp {
 						double totalValuation = 0;
 						SS.setLAMBDA(baseLambda * m);
 						for(int l=0; l<numRepetitions; l++) {//averaging iterations for variance reduction
-							//TODO change parameters initializations
-							//TODO change lambda for load generation
 							String simScenario = SS.getSimulationScenarios()[k];
 							String orchestratorPolicy = SS.getOrchestratorPolicies()[i];
 							Date ScenarioStartDate = Calendar.getInstance().getTime();
@@ -153,13 +152,15 @@ public class MainApp {
 							SampleMobileDeviceManager deviceManager = (SampleMobileDeviceManager)SimManager.getInstance().getMobileDeviceManager();
 							ArrayList<Double> iterationMakespans = deviceManager.getMakespans();
 							Map<Integer, Double> iterationValuations = deviceManager.getValuations();
-							Map<Integer, Double> payments = deviceManager.getValuations();
 							successRate += deviceManager.getSuccessPercentage();
 							double avgIterationMakespan = 0;
 							for(Double makespan : iterationMakespans) {
 								avgIterationMakespan += makespan;
 							}
-							avgIterationMakespan /= iterationMakespans.size();
+							if(iterationMakespans.size() == 0)
+								avgMakespan += makespans.get(m-2);
+							else
+								avgIterationMakespan /= iterationMakespans.size();
 							avgMakespan += avgIterationMakespan;
 							double totalIterationValuation = 0;
 							for(Map.Entry<Integer, Double> entry : iterationValuations.entrySet()) {
@@ -169,8 +170,7 @@ public class MainApp {
 						}
 						successRate /= numRepetitions;
 						avgMakespan /= numRepetitions;
-						if(Double.isNaN(avgMakespan))
-							avgMakespan = makespans.get(m-2);
+						
 						totalValuation /= numRepetitions;
 						makespans.add(avgMakespan);
 						valuations.add(totalValuation);

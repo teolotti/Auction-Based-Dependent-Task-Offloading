@@ -55,7 +55,8 @@ public class WorkflowLoadGenerator extends LoadGeneratorModel {
                 SimLogger.printLine("Impossible is occurred! no random workflow type!");
                 continue;
             }
-
+            if(SimSettings.getInstance().isThirdExp())
+            	randomWorkflowType = 3;
             workflowTypeOfDevices[i] = randomWorkflowType;
 
 

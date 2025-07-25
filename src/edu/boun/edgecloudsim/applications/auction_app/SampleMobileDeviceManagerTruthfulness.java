@@ -53,8 +53,9 @@ import org.apache.commons.math3.distribution.UniformRealDistribution;
 
 import java.math.BigInteger;
 import java.util.*;
+import java.util.random.RandomGenerator;
 
-public class SampleMobileDeviceManager extends MobileDeviceManager {
+public class SampleMobileDeviceManagerTruthfulness extends MobileDeviceManager {
 	private static final int BASE = 100000; //start from base in order not to conflict cloudsim tag!
 	
 	private static final int UPDATE_MM1_QUEUE_MODEL = BASE + 1;
@@ -70,9 +71,10 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 
 	private static final double MM1_QUEUE_MODEL_UPDATE_INTEVAL = 5; //seconds
 	
-	private static final int ENQUEUE_REQ     = BASE+10;
-	private static final int RUN_AUCTION     = BASE+11;
-	private static final int AUCTION_RESULT  = BASE+12;
+	private static final int ENQUEUE_REQ = BASE+10;
+	private static final int RUN_AUCTION = BASE+11;
+	private static final int AUCTION_RESULT = BASE+12;
+	private static final int RETRIEVE_EDGE_STATUS = BASE+13;
 	
 	private int registrationThreshold = 30;
 	private int completed = 0;
@@ -81,6 +83,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 	private int auctionsNumberFromArrivals = 0;
 	private int auctionsNumberFromQueues = 0;
 	private int auctionsNumberFromCompletions = 0;
+	private final double edgeStatusRetrievalDelay = 0.02;
 
 	private  Deque<Request> reqQueue = new ArrayDeque<>();
 	private  int auctionTodoCounter = 0;
@@ -95,14 +98,14 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 	private Map<Integer, Double> valuations = new HashMap<>();
 	private Map<Integer, Double> payments = new HashMap<>();
 	private Map<Integer, Integer> registrations = new HashMap<>();
+	private ArrayList<EdgeStatus> statuses = new ArrayList<>();
 
 	private int winners = 0;
 
 	private int submitted = 0;
-	private double bestFailedMakespan = Double.POSITIVE_INFINITY;
 	
 	
-	public SampleMobileDeviceManager() throws Exception{
+	public SampleMobileDeviceManagerTruthfulness() throws Exception{
 	}
 
 	@Override
@@ -123,6 +126,8 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 		for(int i = 0; i < numEdgeDevices; i++) {
 			registrations.put(i, 0);
 		}
+		statuses = SimManager.getInstance().getEdgeServerManager().getEdgeDevicesStatus();
+		schedule(getId(), edgeStatusRetrievalDelay, RETRIEVE_EDGE_STATUS);
 	}
 	
 	/**
@@ -136,8 +141,6 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 	}
 	
 	public ArrayList<Double> getMakespans() {
-		if(makespans.size() == 0)
-			makespans.add(bestFailedMakespan);
 		return makespans;
 	}
 
@@ -372,16 +375,12 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 					//System.out.println("cpu processing time : " + task.getActualCPUTime());
 					//System.out.println("cpu waiting time : " + task.getWaitingTime());
 					valuations.remove(workflow.getMobileDeviceId());
-					payments.remove(workflow.getMobileDeviceId());
-					double makespan = task.getFinishTime() - workflow.getStartTime();
-					if(bestFailedMakespan > makespan)
-						bestFailedMakespan = makespan;
 				}else {
-					++completed;
-					//System.out.println("completati: " + ++completed);
 					//collect workflow makespan
 					double makespan = task.getFinishTime() - workflow.getStartTime();
 					makespans.add(makespan);
+					++completed;
+					//System.out.println("completati: " + ++completed);
 				}
 				
 				if(task.getAssociatedDatacenterId() == SimSettings.CLOUD_DATACENTER_ID)
@@ -390,35 +389,26 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 					networkModel.downloadFinished(task.getSubmittedLocation(), SimSettings.GENERIC_EDGE_DEVICE_ID);
 				
 				SimLogger.getInstance().taskEnded(task.getCloudletId(), CloudSim.clock());
+				
 				break;
 			}
 			case ENQUEUE_REQ:
 			{
 				WorkflowProperty workflow = (WorkflowProperty) ev.getData();
 				//System.out.println("workflow " + workflow.getMobileDeviceId() + " tries to enter");
-				int associatedEdge = SimManager.getInstance().getMobilityModel().
-						getLocation(workflow.getMobileDeviceId(), CloudSim.clock()).getServingWlanId();
-				if(registrations.get(associatedEdge) < registrationThreshold) {
-					registrations.put(associatedEdge, registrations.get(associatedEdge) + 1);
-					
-					reqQueue.add(new Request(workflow.getMobileDeviceId(), 0, 0, workflow));//dummy request to symbolize registration
-					//System.out.println("request queue size: " + reqQueue.size());
-					if(!auctionRunning) {
-						schedule(getId(), 0.1, RUN_AUCTION);
-					}
-					else
-						auctionTodoCounter++;
-					auctionsNumberFromArrivals++;
-				}else {
-					//System.out.println("but fails");
-					schedule(getId(), 0.01, ENQUEUE_REQ, workflow);
-				}
+				reqQueue.add(new Request(workflow.getMobileDeviceId(), 0, 0, workflow));//dummy request to symbolize registration
+				System.out.println("request queue size: " + reqQueue.size());
+				schedule(getId(), 0.0, RUN_AUCTION);
 				break;
 			}
 			case RUN_AUCTION:
 			{	
+				if(reqQueue.size() < workflowList.size())
+					break;
+				Random ran = new Random();
+				//int randomUser = ran.nextInt(workflowList.size());//for showing possible punishment in payment mechanism if some user raises bid too much
+				
 				Iterator<Request> it = reqQueue.iterator();
-				//System.out.println(reqQueue.size() + " request in queue");
 				while(it.hasNext()) {
 					Request request = it.next();
 					WorkflowProperty workflow = request.getWorkflow();
@@ -432,53 +422,42 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 					double downloadCost = networkModel.getDownloadDelay(SimSettings.GENERIC_EDGE_DEVICE_ID, workflow.getMobileDeviceId(), dummyTask);
 
 					double processingEstimated = workflow.getPredictedMakespan() + uploadCost + downloadCost;
-					if(CloudSim.clock() + processingEstimated > workflow.getDeadline()){//chance of failing here
-						failed++;
-						registrations.put(associatedEdge, registrations.get(associatedEdge) - 1);
-						//System.out.printf("\nregistrations for edge device %d: %d", associatedEdge, registrations.get(associatedEdge));
-						it.remove();
-					}else {
-						double maxUnitCost = SimManager.getInstance().getEdgeServerManager().getMaxCost();
-						double minMips = SimManager.getInstance().getEdgeServerManager().getMinMips();
-						double bid = decideBid(workflow.getTotalWorkload(), maxUnitCost, minMips);
-						
-						request.setBid(bid);
-						request.setProcessingEstimated(processingEstimated);
-						
-						AppDependencies dependencies = new AppDependencies();
-						dependencies.addWorkflowDependencies(workflow);
-						appDependenciesList.put(workflow.getMobileDeviceId(), dependencies);
-					}
+					double maxUnitCost = SimManager.getInstance().getEdgeServerManager().getMaxCost();
+					double minMips = SimManager.getInstance().getEdgeServerManager().getMinMips();
+					double bid = decideBid(workflow.getTotalWorkload(), maxUnitCost, minMips);
+					
+					request.setBid(bid);
+					request.setProcessingEstimated(processingEstimated);
 				}
-				
-				if(reqQueue.size() <= 0)
-					break;
-				auctionRunning = true;
 				AuctionResult winnerData = ((SampleEdgeOrchestrator)SimManager.getInstance().getEdgeOrchestrator()).auction(reqQueue);
-				Request winner = null;
-				double auctionTime = (double) reqQueue.size() * Math.log((double) reqQueue.size()) * 0.01 + 0.01;
+				int randomUser = winnerData.getWinnerId();//for showing the purpose in the intended way
+				double truthfulBid = 0;
 				for(Request request : reqQueue) {
-					if(winnerData.getWinnerId() == request.getId()) {
-						winner = request;
+					if(request.getId() == randomUser) {
+						truthfulBid = request.getBid();
 					}
 				}
-				
-				double valuation = winner.getBid();
-				double payment = winnerData.getPayment();
-				valuations.put(winnerData.getWinnerId(), valuation);
-				payments.put(winnerData.getWinnerId(), payment);
-				//System.out.println("winner: " + winner.getId());
-				//System.out.println("winners: " + ++winners);
-				
-				if(winner != null) {
-					schedule(getId(), auctionTime, AUCTION_RESULT, winner);
-					reqQueue.remove(winner);
+				for(int i = 2; i <= 100; i += 2) {
+					Request designatedRequest = null;
+					for(Request request : reqQueue) {
+						if(request.getId() == randomUser) {
+							request.setBid(i);//designated user is lying on bid
+							request.setProcessingEstimated(workflowList.get(randomUser).getPredictedMakespan());
+						}
+					}
+					winnerData = ((SampleEdgeOrchestrator)SimManager.getInstance().getEdgeOrchestrator()).auction(reqQueue);
+					
+					double valuation = truthfulBid;
+					double payment = winnerData.getWinnerId() == randomUser ? winnerData.getPayment() : 0;
+					valuations.put(i, valuation);
+					payments.put(i, payment);// if user lies, it's very possible that the payment is higher than valuation
+					System.out.println("winner: " + winnerData.getWinnerId() + ", valuation: " + valuation + ", payment: " + payment);
+					//System.out.println("winners: " + ++winners);
 				}
-				else
-					SimLogger.printLine("Winner not found");
+				
 				break;
 			}
-			case AUCTION_RESULT:
+			/*case AUCTION_RESULT:
 			{
 				if(auctionTodoCounter > 0 && reqQueue.size() > 0) {
 					auctionTodoCounter--;
@@ -497,7 +476,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 					int preference = workflow.getPreferredDatacenterForTask(index);
 					if(preference == -1)
 						System.out.println("something went wrong in preference retrieving");
-					submitTask(tasks.get(index), preference, tasks.get(index).getTaskAppId());
+					//submitTask(tasks.get(index), preference, tasks.get(index).getTaskAppId());
 					dependencies.removeTask(tasks.get(index).getTaskAppId());
 				}
 				//System.out.println("started workflow: " + winner.getId());
@@ -531,6 +510,12 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 					}
 					
 				}
+				break;
+			}*/
+			case RETRIEVE_EDGE_STATUS:
+			{
+				statuses = SimManager.getInstance().getEdgeServerManager().getEdgeDevicesStatus();
+				schedule(getId(), edgeStatusRetrievalDelay, RETRIEVE_EDGE_STATUS);
 				break;
 			}
 			default:
@@ -841,7 +826,7 @@ public class SampleMobileDeviceManager extends MobileDeviceManager {
 				personalMappings.get(i).add(new TaskAssignmentInfo(j, 0.0, 0.0, 0.0));
 			}
 		}
-		ArrayList<EdgeStatus> statuses = SimManager.getInstance().getEdgeServerManager().getEdgeDevicesStatus();
+		//ArrayList<EdgeStatus> statuses = SimManager.getInstance().getEdgeServerManager().getEdgeDevicesStatus();
 		for (int i = 0; i < numofEdgeHosts; i++) {
 			readyTimes[i] = statuses.get(i).getWaitingTime();
 		}

@@ -29,8 +29,6 @@ import org.cloudbus.cloudsim.core.SimEvent;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
-
-import edu.boun.edgecloudsim.applications.auction_app.Request;
 import java.util.List;
 
 public class SampleEdgeOrchestrator extends EdgeOrchestrator {
@@ -124,7 +122,7 @@ public class SampleEdgeOrchestrator extends EdgeOrchestrator {
 		}else if(policy.equals("nearest")) {
 			Arrays.sort(a, (r1, r2) -> 
 		    Double.compare(
-		        r2.getProcessingEstimated(), r1.getProcessingEstimated()));
+		        r1.getProcessingEstimated(), r2.getProcessingEstimated()));
 		}else if(policy.equals("selfish")) {
 			Arrays.sort(a, (r1, r2) -> 
 		    Double.compare(

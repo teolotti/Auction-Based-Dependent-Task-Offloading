@@ -99,6 +99,8 @@ public class SimSettings {
 	private double WESTERN_BOUND;
 	
 	private double LAMBDA;
+	
+	private boolean thirdExp = false;
 
 	// mean waiting time (minute) is stored for each place types
 	private double[] mobilityLookUpTable;
@@ -1073,6 +1075,14 @@ public class SimSettings {
 
 	public void setLAMBDA(double lAMBDA) {
 		LAMBDA = lAMBDA;
+	}
+
+	public boolean isThirdExp() {
+		return thirdExp;
+	}
+
+	public void setThirdExp(boolean thirdExp) {
+		this.thirdExp = thirdExp;
 	}
 
 
