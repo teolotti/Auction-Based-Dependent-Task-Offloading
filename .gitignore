@@ -29,3 +29,6 @@ results
 *.iml
 out
 gen
+
+.py
+.png
